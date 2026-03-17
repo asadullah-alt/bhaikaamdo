@@ -90,6 +90,56 @@ export default function PublicJobPage({ params: paramsPromise }: { params: Promi
     }
   }, [params.id])
 
+  const jsonLd = React.useMemo(() => {
+    if (!jobData) return null;
+
+    const fullDescription = [
+      jobData.jobSummary,
+      jobData.keyResponsibilities?.length ? "\nKey Responsibilities:\n" + jobData.keyResponsibilities.map((r: string) => `- ${r}`).join("\n") : "",
+      jobData.qualifications?.required?.length ? "\nRequired Qualifications:\n" + jobData.qualifications.required.map((q: string) => `- ${q}`).join("\n") : "",
+      jobData.qualifications?.preferred?.length ? "\nPreferred Qualifications:\n" + jobData.qualifications.preferred.map((q: string) => `- ${q}`).join("\n") : "",
+    ].filter(Boolean).join("\n\n");
+
+    const salaryValue = parseInt(jobData.maxSalary?.replace(/,/g, '') || "0");
+
+    return {
+      "@context": "https://schema.org/",
+      "@type": "JobPosting",
+      "title": jobData.jobPosition || jobData.jobTitle,
+      "description": fullDescription,
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "bhiakaamdo",
+        "value": params.id
+      },
+      "datePosted": jobData.dateSaved || new Date().toISOString().split('T')[0],
+      "validThrough": jobData.deadline || undefined,
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": jobData.companyProfile?.companyName || "Company Name",
+        "sameAs": jobData.companyProfile?.website || "https://companywebsite.com"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": jobData.location.city || "Lahore",
+          "addressRegion": jobData.location.state || "Punjab",
+          "addressCountry": jobData.location.country || "PK"
+        }
+      },
+      "baseSalary": salaryValue > 0 ? {
+        "@type": "MonetaryAmount",
+        "currency": "PKR",
+        "value": {
+          "@type": "QuantitativeValue",
+          "value": salaryValue,
+          "unitText": "MONTH"
+        }
+      } : undefined
+    };
+  }, [jobData, params.id]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -111,6 +161,12 @@ export default function PublicJobPage({ params: paramsPromise }: { params: Promi
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Button
         variant="ghost"
         className="mb-6"
