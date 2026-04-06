@@ -394,7 +394,7 @@ export default function MatchesPage() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <p className="text-base font-semibold text-foreground">Matching in progress</p>
-                                        <p className="text-sm text-muted-foreground max-w-[320px]">
+                                        <p className="text-sm text-muted-foreground max-w-[240px]">
                                             We&apos;re processing your resume against {weightedCount} jobs.
                                             Please hold on for 10 seconds. This page will display the closest matching jobs...
                                         </p>

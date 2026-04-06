@@ -325,6 +325,16 @@ export default function MatchDetailPage({ params: paramsPromise }: { params: Pro
 
                         <Separator />
 
+                        {job_details.extractedKeywords && job_details.extractedKeywords.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {job_details.extractedKeywords.map((keyword: string, index: number) => (
+                                    <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-none hover:bg-primary/20 transition-colors">
+                                        {keyword}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold">Job Summary</h2>
                             <p className="text-muted-foreground leading-relaxed text-lg italic bg-primary/5 p-4 rounded-xl border-l-4 border-primary">
@@ -377,18 +387,6 @@ export default function MatchDetailPage({ params: paramsPromise }: { params: Pro
                             </section>
                         )}
 
-                        {job_details.extractedKeywords && job_details.extractedKeywords.length > 0 && (
-                            <section className="space-y-4">
-                                <h2 className="text-2xl font-bold">Skills & Keywords</h2>
-                                <div className="flex flex-wrap gap-2">
-                                    {job_details.extractedKeywords.map((skill, i) => (
-                                        <Badge key={i} variant="outline" className="px-3 py-1 bg-background">
-                                            {skill}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
                     </div>
 
                     {/* Sidebar Column — shown first on mobile */}
