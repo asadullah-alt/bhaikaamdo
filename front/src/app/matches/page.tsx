@@ -324,7 +324,7 @@ export default function MatchesPage() {
                 </header>
 
                 <div className="flex-grow flex overflow-hidden">
-                    <aside className="w-full md:w-[350px] lg:w-[380px] md:border-r overflow-y-auto bg-muted/20 p-3 space-y-3">
+                    <aside className="w-full md:w-[350px] lg:w-[380px] flex-shrink-0 md:border-r overflow-y-auto bg-muted/20 p-3 space-y-3">
                         {preferences && (
                             <div className="p-3 rounded-lg bg-background border shadow-sm space-y-2 mb-4">
                                 <div className="flex items-center justify-between">
@@ -462,7 +462,7 @@ export default function MatchesPage() {
                         )}
                     </aside>
 
-                    <main className="hidden md:block flex-grow overflow-y-auto bg-background p-8">
+                    <main className="hidden md:block flex-1 min-w-0 overflow-y-auto bg-background p-8">
                         {selectedMatch ? (
                             <div className="max-w-[95%] mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <header className="space-y-3">
