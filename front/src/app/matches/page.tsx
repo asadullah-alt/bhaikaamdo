@@ -371,6 +371,15 @@ export default function MatchesPage() {
                             </div>
                         )}
 
+                        {!loading && !error && filteredMatches.length > 0 && (
+                            <div className="px-1 py-1 flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <span>Matches Found</span>
+                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    {filteredMatches.length}
+                                </span>
+                            </div>
+                        )}
+
                         {loading ? (
                             [...Array(8)].map((_, i) => (
                                 <div key={i} className="h-20 rounded-lg border bg-card animate-pulse" />
@@ -573,6 +582,16 @@ export default function MatchesPage() {
                                 </header>
 
                                 <Separator />
+
+                                {selectedMatch.job_details.extractedKeywords && selectedMatch.job_details.extractedKeywords.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {selectedMatch.job_details.extractedKeywords.map((keyword: string, index: number) => (
+                                            <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-none hover:bg-primary/20 transition-colors">
+                                                {keyword}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <section className="space-y-4">
                                     <h2 className="text-2xl font-bold">Job Summary</h2>
