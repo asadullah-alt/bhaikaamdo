@@ -66,3 +66,8 @@ export async function markMatchClicked(matchId: string, token: string) {
   );
 }
 
+/** GET /vectors/weighted-count — get weighted count of vectors */
+export async function getWeightedVectorCount() {
+  return apiGet(`${RESUME_API_URL}/api/v1/open-jobs/vectors/weighted-count`);
+}
+

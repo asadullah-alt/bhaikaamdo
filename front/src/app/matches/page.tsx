@@ -45,6 +45,9 @@ export default function MatchesPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [sheetOpen, setSheetOpen] = useState(false)
     const { selectedResumeId, setSelectedResumeId } = useResumeStore()
+    const [weightedCount, setWeightedCount] = useState<number | string>("thousands of")
+    const CACHE_KEY = 'enriched_matches_cache_v1'
+    const CACHE_EXPIRY = 12 * 60 * 60 * 1000 // 12 hours
     const router = useRouter()
 
     // Resume analysis state
@@ -66,13 +69,35 @@ export default function MatchesPage() {
     const [resumeId, setResumeId] = useState<string | null>(null)
     const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false)
 
-    const fetchMatches = async () => {
+    const fetchMatches = async (forceRefresh = false) => {
         try {
             const token = getAuthToken()
             if (!token) {
                 setError("Session expired. Please log in again.")
                 setLoading(false)
                 return
+            }
+
+            // Check cache
+            if (!forceRefresh) {
+                const cached = localStorage.getItem(CACHE_KEY)
+                if (cached) {
+                    try {
+                        const { data: cachedData, timestamp } = JSON.parse(cached)
+                        if (Date.now() - timestamp < CACHE_EXPIRY) {
+                            console.log("Using cached matches")
+                            setMatches(cachedData)
+                            if (cachedData.length > 0 && !selectedId) {
+                                setSelectedId(cachedData[0].match._id || null)
+                            }
+                            setLoading(false)
+                            return
+                        }
+                    } catch (e) {
+                        console.error("Error parsing cache:", e)
+                        localStorage.removeItem(CACHE_KEY)
+                    }
+                }
             }
 
             const data = await jobsApi.getEnrichedMatches(token) as EnrichedMatch[]
@@ -88,6 +113,12 @@ export default function MatchesPage() {
                     }
                 };
             });
+
+            // Save to cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                data: sanitized,
+                timestamp: Date.now()
+            }))
 
             setMatches(sanitized)
             if (sanitized.length > 0 && !selectedId) {
@@ -113,6 +144,17 @@ export default function MatchesPage() {
             }
         }
 
+        const fetchWeightedCount = async () => {
+            try {
+                const data = await jobsApi.getWeightedVectorCount()
+                if (data && data.weighted_count) {
+                    setWeightedCount(data.weighted_count.toLocaleString())
+                }
+            } catch (err) {
+                console.error("Error fetching weighted count:", err)
+            }
+        }
+
         const handlePrefsUpdated = () => {
             fetchPreferences()
         }
@@ -120,11 +162,12 @@ export default function MatchesPage() {
         const handleResumeUploaded = () => {
             console.log("Resume uploaded event received, refreshing matches...")
             setLoading(true)
-            fetchMatches()
+            fetchMatches(true)
         }
 
         fetchMatches()
         fetchPreferences()
+        fetchWeightedCount()
 
         window.addEventListener('preferences-updated', handlePrefsUpdated)
         window.addEventListener('resume-uploaded', handleResumeUploaded)
@@ -243,7 +286,7 @@ export default function MatchesPage() {
             description: "Your file has been processed. Refreshing matches…",
         })
         setSheetOpen(false)
-        fetchMatches()
+        fetchMatches(true)
     }
 
     const filteredMatches = matches.filter(m => {
@@ -342,9 +385,9 @@ export default function MatchesPage() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <p className="text-base font-semibold text-foreground">Matching in progress</p>
-                                        <p className="text-sm text-muted-foreground max-w-[240px]">
-                                            We&apos;re processing your resume against thousands of job postings.
-                                            You&apos;ll receive an email as soon as your personalized matches are ready.
+                                        <p className="text-sm text-muted-foreground max-w-[320px]">
+                                            We&apos;re processing your resume against {weightedCount} jobs.
+                                            Please hold on for 10 seconds. This page will display the closest matching jobs...
                                         </p>
                                     </div>
                                 </div>
@@ -412,7 +455,7 @@ export default function MatchesPage() {
 
                     <main className="hidden md:block flex-grow overflow-y-auto bg-background p-8">
                         {selectedMatch ? (
-                            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="max-w-[95%] mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <header className="space-y-3">
                                     <div className="flex flex-wrap gap-2">
                                         <Badge variant="secondary" className="px-3 py-1">
@@ -709,8 +752,8 @@ export default function MatchesPage() {
                                         <div className="text-center space-y-3 max-w-sm">
                                             <p className="text-xl font-bold text-foreground">Matching in progress</p>
                                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                                We&apos;re processing your resume against thousands of job postings.
-                                                You&apos;ll get an <span className="font-medium text-foreground">email</span> the moment your personalised matches are ready.
+                                                We&apos;re processing your resume against {weightedCount} jobs.
+                                                Please hold on for 10 seconds. This page will display the closest matching jobs...
                                             </p>
                                             <div className="flex items-center justify-center gap-1.5 pt-1">
                                                 {[0, 0.4, 0.8].map((delay, i) => (
