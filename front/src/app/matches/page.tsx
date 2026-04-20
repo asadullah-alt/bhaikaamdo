@@ -102,8 +102,24 @@ export default function MatchesPage() {
 
             const data = await jobsApi.getEnrichedMatches(token) as EnrichedMatch[]
 
+            // Filter out matches older than one month
+            const oneMonthAgo = new Date()
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+
+            const filtered = data.filter(m => {
+                if (!m.job_details.datePosted) return true // Keep if no date
+
+                try {
+                    const postedDate = new Date(m.job_details.datePosted)
+                    return postedDate >= oneMonthAgo
+                } catch (e) {
+                    console.error("Error parsing date:", e)
+                    return true // Keep if date parsing fails
+                }
+            })
+
             // Sanitize IDs: prefer match._id over job_details.job_id (which might be a URL)
-            const sanitized = data.map(m => {
+            const sanitized = filtered.map(m => {
                 const matchId = m.match._id;
                 return {
                     ...m,
@@ -395,7 +411,7 @@ export default function MatchesPage() {
                                     <div className="space-y-1.5">
                                         <p className="text-base font-semibold text-foreground">Matching in progress</p>
                                         <p className="text-sm text-muted-foreground max-w-[240px]">
-                                            We&apos;re processing your resume against {weightedCount} jobs.
+                                            We&apos;re processing your resume against {weightedCount / 100} jobs.
                                             Please hold on for 10 seconds. This page will display the closest matching jobs...
                                         </p>
                                     </div>
