@@ -47,7 +47,7 @@ export default function MatchesPage() {
     const { selectedResumeId, setSelectedResumeId } = useResumeStore()
     const [weightedCount, setWeightedCount] = useState<number | string>("thousands of")
     const CACHE_KEY = 'enriched_matches_cache_v1'
-    const CACHE_EXPIRY = 12 * 60 * 60 * 1000 // 12 hours
+    const CACHE_EXPIRY = 6 * 60 * 60 * 1000 // 6 hours
     const router = useRouter()
 
     // Resume analysis state
