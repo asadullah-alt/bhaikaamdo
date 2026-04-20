@@ -107,7 +107,7 @@ export default function MatchesPage() {
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
 
             const filtered = data.filter(m => {
-                if (!m.job_details.datePosted) return true // Keep if no date
+                if (!m.job_details.datePosted) return false // Keep if no date
 
                 try {
                     const postedDate = new Date(m.job_details.datePosted)
