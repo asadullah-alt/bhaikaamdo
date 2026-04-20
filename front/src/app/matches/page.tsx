@@ -111,7 +111,7 @@ export default function MatchesPage() {
 
                     // Check if date is in the future
                     if (postedDate > now) {
-                        const adjustedDate = new Date(postedDate);
+                        const adjustedDate = new Date(now);
                         adjustedDate.setDate(now.getDate() - 20);
 
                         return {
