@@ -85,7 +85,6 @@ export default function MatchesPage() {
                     try {
                         const { data: cachedData, timestamp } = JSON.parse(cached)
                         if (Date.now() - timestamp < CACHE_EXPIRY) {
-                            console.log("Using cached matches")
                             setMatches(cachedData)
                             if (cachedData.length > 0 && !selectedId) {
                                 setSelectedId(cachedData[0].match._id || null)
@@ -101,24 +100,51 @@ export default function MatchesPage() {
             }
 
             const data = await jobsApi.getEnrichedMatches(token) as EnrichedMatch[]
+            const now = new Date()
 
-            // Filter out matches older than one month
+            // 1. Process dates: if posted in the future, move back 20 days
+            const processedDates = data.map(m => {
+                if (!m.job_details.datePosted) return m;
+
+                try {
+                    const postedDate = new Date(m.job_details.datePosted)
+
+                    // Check if date is in the future
+                    if (postedDate > now) {
+                        const adjustedDate = new Date(postedDate);
+                        adjustedDate.setDate(adjustedDate.getDate() - 20);
+
+                        return {
+                            ...m,
+                            job_details: {
+                                ...m.job_details,
+                                // Format back to string (ISO or locale dependent on your API needs)
+                                datePosted: adjustedDate.toISOString().split('T')[0]
+                            }
+                        };
+                    }
+                } catch (e) {
+                    console.error("Error adjusting future date:", e)
+                }
+                return m;
+            })
+
+            // 2. Filter out matches older than one month
             const oneMonthAgo = new Date()
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
 
-            const filtered = data.filter(m => {
-                if (!m.job_details.datePosted) return false // Keep if no date
+            const filtered = processedDates.filter(m => {
+                if (!m.job_details.datePosted) return false
 
                 try {
                     const postedDate = new Date(m.job_details.datePosted)
                     return postedDate >= oneMonthAgo
                 } catch (e) {
-                    console.error("Error parsing date:", e)
-                    return true // Keep if date parsing fails
+                    return true
                 }
             })
 
-            // Sanitize IDs: prefer match._id over job_details.job_id (which might be a URL)
+            // 3. Sanitize IDs
             const sanitized = filtered.map(m => {
                 const matchId = m.match._id;
                 return {
@@ -130,7 +156,7 @@ export default function MatchesPage() {
                 };
             });
 
-            // Save to cache
+            // Save to cache and state
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 data: sanitized,
                 timestamp: Date.now()
@@ -142,7 +168,7 @@ export default function MatchesPage() {
             }
         } catch (err: unknown) {
             console.error("Error fetching matches:", err)
-            setError(err instanceof Error ? err.message : "Failed to load matches. Please try again later.")
+            setError(err instanceof Error ? err.message : "Failed to load matches.")
         } finally {
             setLoading(false)
         }
