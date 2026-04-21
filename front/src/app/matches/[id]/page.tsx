@@ -12,9 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCfAuthCookie } from '@/utils/cookie'
 import { FileText } from 'lucide-react'
 import { OpenJobCoverLetterModal } from '@/components/open-job-cover-letter-modal'
-import dynamic from 'next/dynamic'
-
-const GaugeComponent = dynamic(() => import('react-gauge-component'), { ssr: false })
+import { ScoreDial } from '@/components/ui/score-dial'
 
 export default function MatchDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
     const params = use(paramsPromise)
@@ -479,26 +477,12 @@ export default function MatchDetailPage({ params: paramsPromise }: { params: Pro
                                         </div>
                                     ) : analysisResult && (
                                         <div className="space-y-6">
-                                            <div className="flex flex-col items-center">
-                                                <GaugeComponent
-                                                    type="semicircle"
-                                                    arc={{
-                                                        colorArray: ['#FF2121', '#FFA500', '#00FF15'],
-                                                        padding: 0.02,
-                                                        width: 0.2,
-                                                        subArcs: [
-                                                            { limit: 40 },
-                                                            { limit: 60 },
-                                                            { limit: 100 }
-                                                        ]
-                                                    }}
-                                                    pointer={{ type: "blob", animationDelay: 0 }}
+                                            <div className="flex justify-center">
+                                                <ScoreDial
                                                     value={Math.round(analysisResult.original_score * 100)}
+                                                    size={200}
+                                                    label="Resume Score"
                                                 />
-                                                <div className="text-center mt-4">
-                                                    <p className="text-sm font-medium">Resume Score</p>
-                                                    <p className="text-2xl font-bold">{Math.round(analysisResult.original_score * 100)}%</p>
-                                                </div>
                                             </div>
 
                                             <div className="space-y-4">

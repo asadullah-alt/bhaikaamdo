@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import AuthGuard from "@/components/auth-guard"
@@ -31,9 +31,7 @@ import { setCookie, getCfAuthCookie } from "@/utils/cookie"
 import { useResumeStore } from "@/store/resume-store"
 import { FileText } from "lucide-react"
 import { OpenJobCoverLetterModal } from "@/components/open-job-cover-letter-modal"
-import dynamic from "next/dynamic"
-
-const GaugeComponent = dynamic(() => import('react-gauge-component'), { ssr: false })
+import { ResumeAnalysisModal } from "@/components/resume-analysis-modal"
 
 
 export default function MatchesPage() {
@@ -68,6 +66,7 @@ export default function MatchesPage() {
     } | null>(null)
     const [resumeId, setResumeId] = useState<string | null>(null)
     const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false)
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false)
 
     const fetchMatches = async (forceRefresh = false) => {
         try {
@@ -274,6 +273,7 @@ export default function MatchesPage() {
 
         try {
             setAnalyzing(true)
+            setIsAnalysisModalOpen(true)
 
             const payload: Record<string, unknown> = {
                 match_id: selectedId,
@@ -302,16 +302,6 @@ export default function MatchesPage() {
             setAnalyzing(false)
         }
     }
-
-    // Ref for smooth scrolling to analysis results
-    const analysisRef = useRef<HTMLDivElement>(null)
-
-    // Scroll to analysis section when analysis completes
-    useEffect(() => {
-        if (analysisResult && !analyzing && analysisRef.current) {
-            analysisRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-    }, [analysisResult, analyzing])
 
     const handleUploadSuccess = async (resume_id: string) => {
         try {
@@ -587,7 +577,13 @@ export default function MatchesPage() {
                                                 <Button
                                                     size="sm"
                                                     className="w-full h-8 text-xs"
-                                                    onClick={analyzeResume}
+                                                    onClick={() => {
+                                                        if (analysisResult) {
+                                                            setIsAnalysisModalOpen(true)
+                                                        } else {
+                                                            analyzeResume()
+                                                        }
+                                                    }}
                                                     disabled={analyzing}
                                                 >
                                                     {analyzing ? (
@@ -598,7 +594,7 @@ export default function MatchesPage() {
                                                     ) : (
                                                         <>
                                                             <IconChartBar className="mr-1 h-3 w-3" />
-                                                            {analysisResult ? 'Analyze Again' : 'Analyze Resume'}
+                                                            {analysisResult ? 'View Analysis' : 'Analyze Resume'}
                                                         </>
                                                     )}
                                                 </Button>
@@ -668,89 +664,14 @@ export default function MatchesPage() {
                                     </section>
                                 )}
 
-                                {/* Resume Analysis Results (shown after analysis) */}
-                                {(analyzing || analysisResult) && (
-                                    <>
-                                        <Separator />
-                                        <section ref={analysisRef} className="space-y-4 scroll-mt-4">
-                                            <h2 className="text-2xl font-bold">Resume Analysis</h2>
-                                            <div className="bg-card rounded-lg p-6 border shadow-sm">
-                                                {analyzing ? (
-                                                    <div className="flex flex-col items-center py-4">
-                                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                                                        <p className="text-sm text-muted-foreground text-center">
-                                                            Analyzing your resume against this job posting...
-                                                        </p>
-                                                    </div>
-                                                ) : analysisResult && (
-                                                    <div className="space-y-6">
-                                                        <div className="flex flex-col items-center">
-                                                            <GaugeComponent
-                                                                type="semicircle"
-                                                                arc={{
-                                                                    colorArray: ['#FF2121', '#FFA500', '#00FF15'],
-                                                                    padding: 0.02,
-                                                                    width: 0.2,
-                                                                    subArcs: [
-                                                                        { limit: 40 },
-                                                                        { limit: 60 },
-                                                                        { limit: 100 }
-                                                                    ]
-                                                                }}
-                                                                pointer={{ type: "blob", animationDelay: 0 }}
-                                                                value={Math.round(analysisResult.original_score * 100)}
-                                                            />
-                                                            <div className="text-center mt-4">
-                                                                <p className="text-sm font-medium">Resume Score</p>
-                                                                <p className="text-2xl font-bold">{Math.round(analysisResult.original_score * 100)}%</p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-4">
-                                                            <div className="bg-muted/20 rounded-lg p-4">
-                                                                <h4 className="font-medium mb-2">Skill Analysis</h4>
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    {analysisResult.skill_comparison.map((skill, index) => (
-                                                                        skill.resume_mentions > 0 && (
-                                                                            <Badge key={index} variant="secondary" className="justify-between">
-                                                                                {skill.skill}
-                                                                                <span className="ml-2 text-xs">{skill.resume_mentions}✓</span>
-                                                                            </Badge>
-                                                                        )
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <h4 className="font-medium mb-2">Missing Skills</h4>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {analysisResult.skill_comparison.map((skill, index) => (
-                                                                        skill.resume_mentions === 0 && (
-                                                                            <Badge key={index} variant="outline" className="border-red-200 text-red-500">
-                                                                                {skill.skill}
-                                                                            </Badge>
-                                                                        )
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-
-                                                            {analysisResult.improvements && (
-                                                                <div>
-                                                                    <h4 className="font-medium mb-2">Suggested Improvements</h4>
-                                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-muted-foreground">
-                                                                        {analysisResult.improvements.slice(0, 3).map((imp, index) => (
-                                                                            <li key={index}>{imp.suggestion}</li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </section>
-                                    </>
-                                )}
+                                <ResumeAnalysisModal
+                                    isOpen={isAnalysisModalOpen}
+                                    onClose={() => setIsAnalysisModalOpen(false)}
+                                    analyzing={analyzing}
+                                    analysisResult={analysisResult}
+                                    onAnalyzeAgain={analyzeResume}
+                                    jobTitle={selectedMatch.job_details.jobTitle ?? undefined}
+                                />
                             </div>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center gap-10 px-8">

@@ -8,13 +8,11 @@ import { Separator } from '@/components/ui/separatorInteractive'
 import { Badge } from '@/components/ui/badgeTable'
 import { useJobStore } from '@/store/job-store'
 import { getCfAuthCookie } from '@/utils/cookie'
-import dynamic from "next/dynamic";
 import { Link, Share2, FileText } from "lucide-react";
 import { CoverLetterModal } from '@/components/cover-letter-modal';
+import { ScoreDial } from '@/components/ui/score-dial';
 
 import { ExtendedJob } from '@/store/job-store'
-
-const GaugeComponent = dynamic(() => import('react-gauge-component'), { ssr: false });
 
 export default function SingleJobPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = use(paramsPromise)
@@ -548,26 +546,12 @@ export default function SingleJobPage({ params: paramsPromise }: { params: Promi
                 </div>
               ) : analysisResult && (
                 <div className="space-y-6">
-                  <div className="flex flex-col items-center">
-                    <GaugeComponent
-                      type="semicircle"
-                      arc={{
-                        colorArray: ['#FF2121', '#FFA500', '#00FF15'],
-                        padding: 0.02,
-                        width: 0.2,
-                        subArcs: [
-                          { limit: 40 },
-                          { limit: 60 },
-                          { limit: 100 }
-                        ]
-                      }}
-                      pointer={{ type: "blob", animationDelay: 0 }}
+                  <div className="flex justify-center">
+                    <ScoreDial
                       value={Math.round(analysisResult.original_score * 100)}
+                      size={200}
+                      label="Match Score"
                     />
-                    <div className="text-center mt-4">
-                      <p className="text-sm font-medium">Match Score</p>
-                      <p className="text-2xl font-bold">{Math.round(analysisResult.original_score * 100)}%</p>
-                    </div>
                   </div>
 
                   <div className="space-y-4">
