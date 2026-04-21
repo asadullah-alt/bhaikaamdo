@@ -1,10 +1,10 @@
 
 import React from 'react'
-import { HeroHeader } from '@/components/hero-section-1'
+
 export default function PrivacyPolicy() {
     return (
         <>
-            <HeroHeader />
+
             <div className="container mx-auto px-4 py-12 max-w-4xl">
                 <div className="bg-card text-card-foreground shadow-sm border rounded-lg p-8">
                     <h1 className="text-3xl font-bold mb-6 tracking-tight">Privacy Policy</h1>

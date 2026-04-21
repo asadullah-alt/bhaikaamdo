@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { PricingSection } from '@/components/pricing-section'
-import { HeroHeader } from '@/components/hero-section-1'
 import { CheckIcon } from '@radix-ui/react-icons'
 
 const sampleTiers = [
@@ -60,9 +59,8 @@ const sampleTiers = [
 
 export default function PricingPage() {
   return (
-    <>
-      <HeroHeader />
+    <div className="pt-24">
       <PricingSection tiers={sampleTiers} />
-    </>
+    </div>
   )
 }

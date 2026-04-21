@@ -176,121 +176,145 @@ export default function UserPreferencesModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>User Preferences</DialogTitle>
-                    <DialogDescription>
-                        Set your job preferences to get better matches.
+            <DialogContent className="max-w-[500px] w-[95vw] p-0 overflow-hidden glass-panel border-white/20 shadow-2xl backdrop-blur-3xl max-h-[95vh] flex flex-col">
+                <DialogHeader className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-white/10 shrink-0 bg-white/5">
+                    <DialogTitle className="text-xl sm:text-2xl font-black uppercase tracking-tight italic">
+                        Preference <span className="text-primary italic">Matrix</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-[10px] sm:text-sm text-muted-foreground font-medium">
+                        Calibrate your neural filters for higher precision job matching.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="salary_min">Min Salary</Label>
-                            <Input
-                                id="salary_min"
-                                type="number"
-                                placeholder="e.g. 50000"
-                                value={formData.salary_min ?? ""}
-                                onChange={(e) => handleChange("salary_min", e.target.value ? parseInt(e.target.value) : null)}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="salary_max">Max Salary</Label>
-                            <Input
-                                id="salary_max"
-                                type="number"
-                                placeholder="e.g. 150000"
-                                value={formData.salary_max ?? ""}
-                                onChange={(e) => handleChange("salary_max", e.target.value ? parseInt(e.target.value) : null)}
-                            />
+
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 bg-white/5 custom-scrollbar">
+                    {/* Salary Range Section */}
+                    <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+                            Compensation Vector
+                        </Label>
+                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="salary_min" className="text-xs font-bold text-muted-foreground">Min Registry</Label>
+                                <Input
+                                    id="salary_min"
+                                    type="number"
+                                    placeholder="50k"
+                                    className="bg-white/5 border-white/10 rounded-xl"
+                                    value={formData.salary_min ?? ""}
+                                    onChange={(e) => handleChange("salary_min", e.target.value ? parseInt(e.target.value) : null)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="salary_max" className="text-xs font-bold text-muted-foreground">Max Registry</Label>
+                                <Input
+                                    id="salary_max"
+                                    type="number"
+                                    placeholder="150k"
+                                    className="bg-white/5 border-white/10 rounded-xl"
+                                    value={formData.salary_max ?? ""}
+                                    onChange={(e) => handleChange("salary_max", e.target.value ? parseInt(e.target.value) : null)}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="experience">Years of Experience</Label>
-                        <Input
-                            id="experience"
-                            type="number"
-                            step="0.5"
-                            placeholder="e.g. 2.5"
-                            value={formData.experience ?? ""}
-                            onChange={(e) => handleChange("experience", e.target.value ? parseFloat(e.target.value) : null)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="country">Country</Label>
-                            <Select
-                                value={formData.country ?? ""}
-                                onValueChange={(value) => {
-                                    handleChange("country", value)
-                                    handleChange("city", "")
-                                }}
-                            >
-                                <SelectTrigger id="country">
-                                    <SelectValue placeholder="Select Country" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {countriesList.map((country) => (
-                                        <SelectItem key={country.id} value={country.name}>
-                                            {country.emoji} {country.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="city">City</Label>
-                            <Select
-                                value={formData.city ?? ""}
-                                onValueChange={(value) => handleChange("city", value)}
-                                disabled={!formData.country && formData.city !== "Remote"}
-                            >
-                                <SelectTrigger id="city">
-                                    <SelectValue placeholder={citiesLoading ? "Loading..." : "Select City"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {citiesLoading ? (
-                                        <div className="flex items-center justify-center p-4">
-                                            <span className="text-sm text-muted-foreground animate-pulse">Loading cities...</span>
-                                        </div>
-                                    ) : (
-                                        availableCities.map((city) => (
-                                            <SelectItem key={city} value={city}>
-                                                {city}
+                    {/* Geolocation Section */}
+                    <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">
+                            Geolocation Node
+                        </Label>
+                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="country" className="text-xs font-bold text-muted-foreground">Global Cluster</Label>
+                                <Select
+                                    value={formData.country ?? ""}
+                                    onValueChange={(value) => {
+                                        handleChange("country", value)
+                                        handleChange("city", "")
+                                    }}
+                                >
+                                    <SelectTrigger id="country" className="bg-white/5 border-white/10 rounded-xl">
+                                        <SelectValue placeholder="Select Cluster" />
+                                    </SelectTrigger>
+                                    <SelectContent className="glass-panel border-white/20">
+                                        {countriesList.slice(0, 100).map((country) => (
+                                            <SelectItem key={country.id} value={country.name} className="focus:bg-primary/20">
+                                                {country.emoji} {country.name}
                                             </SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                            </Select>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="city" className="text-xs font-bold text-muted-foreground">Local Registry</Label>
+                                <Select
+                                    value={formData.city ?? ""}
+                                    onValueChange={(value) => handleChange("city", value)}
+                                    disabled={!formData.country && formData.city !== "Remote"}
+                                >
+                                    <SelectTrigger id="city" className="bg-white/5 border-white/10 rounded-xl">
+                                        <SelectValue placeholder={citiesLoading ? "Syncing..." : "Select City"} />
+                                    </SelectTrigger>
+                                    <SelectContent className="glass-panel border-white/20">
+                                        {citiesLoading ? (
+                                            <div className="flex items-center justify-center p-4">
+                                                <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground animate-pulse">Scanning…</span>
+                                            </div>
+                                        ) : (
+                                            availableCities.map((city) => (
+                                                <SelectItem key={city} value={city} className="focus:bg-primary/20">
+                                                    {city}
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="visa_sponsorship"
-                            checked={formData.visa_sponsorship ?? false}
-                            onCheckedChange={(checked) => handleChange("visa_sponsorship", checked)}
-                        />
-                        <Label htmlFor="visa_sponsorship" className="cursor-pointer">
-                            Visa Sponsorship Required
+                    {/* Logic Gates (Checkboxes) */}
+                    <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                            Constraint Gates
                         </Label>
+                        <div className="grid grid-cols-1 gap-4">
+                            <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-colors group">
+                                <Checkbox
+                                    id="visa_sponsorship"
+                                    checked={formData.visa_sponsorship ?? false}
+                                    onCheckedChange={(checked) => handleChange("visa_sponsorship", checked)}
+                                    className="border-white/20 data-[state=checked]:bg-primary rounded-md"
+                                />
+                                <div className="space-y-0.5">
+                                    <span className="text-sm font-bold group-hover:text-primary transition-colors">Relocation Protocol</span>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Filter for Visa-sponsored nodes only</p>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-colors group">
+                                <Checkbox
+                                    id="remote_friendly"
+                                    checked={formData.remote_friendly ?? false}
+                                    onCheckedChange={(checked) => handleChange("remote_friendly", checked)}
+                                    className="border-white/20 data-[state=checked]:bg-secondary rounded-md"
+                                />
+                                <div className="space-y-0.5">
+                                    <span className="text-sm font-bold group-hover:text-secondary transition-colors">Distributed Sync</span>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Prioritize remote-friendly clusters</p>
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="remote_friendly"
-                            checked={formData.remote_friendly ?? false}
-                            onCheckedChange={(checked) => handleChange("remote_friendly", checked)}
-                        />
-                        <Label htmlFor="remote_friendly" className="cursor-pointer">
-                            Remote Friendly Only
-                        </Label>
-                    </div>
-                    <DialogFooter>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Saving..." : "Save Preferences"}
+
+                    <DialogFooter className="pt-4 border-t border-white/10">
+                        <Button 
+                            variant="default" 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full h-14 text-lg font-black uppercase tracking-tight rounded-2xl shadow-xl shadow-primary/20"
+                        >
+                            {loading ? "Synchronizing…" : "Deploy Preferences"}
                         </Button>
                     </DialogFooter>
                 </form>

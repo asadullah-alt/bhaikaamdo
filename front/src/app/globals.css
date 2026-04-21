@@ -41,6 +41,15 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+
+  /* Luminous Glass Tokens */
+  --color-mesh-1: oklch(80% 0.1 300);
+  --color-mesh-2: oklch(85% 0.08 220);
+  --color-mesh-3: oklch(88% 0.06 350);
+  --color-luminous-teal: oklch(75% 0.15 190);
+  --color-luminous-lime: oklch(85% 0.2 110);
 }
 
 :root {
@@ -121,13 +130,32 @@
   }
 }
 
-@keyframes flow-line {
-  0% {
-    transform: translateX(-100%);
+/* Luminous Glass Utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/40 backdrop-blur-2xl border border-white/20 shadow-xl;
   }
-  100% {
-    transform: translateX(100%);
+  
+  .glass-panel {
+    @apply bg-white/20 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-3xl;
   }
+
+  .mesh-gradient {
+    background-color: var(--background);
+    background-image: 
+      radial-gradient(at 0% 0%, var(--color-mesh-1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, var(--color-mesh-2) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, var(--color-mesh-3) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, var(--color-luminous-teal) 0px, transparent 50%);
+    background-size: 200% 200%;
+    animation: mesh-flow 20s ease infinite;
+  }
+}
+
+@keyframes mesh-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-flow-line {

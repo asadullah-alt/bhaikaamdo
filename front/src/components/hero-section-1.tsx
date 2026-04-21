@@ -1,469 +1,218 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { ArrowRight, Menu, X, Target, Sparkles, TrendingUp, BarChart3, CheckCircle2, Clock, Zap, Moon, Sun, Globe } from 'lucide-react'
-import { Button } from '@/components/ui/buttonHome'
-import { AnimatedGroup } from '@/components/ui/animated-group'
-import Image from 'next/image'
+import React, { useState } from 'react'
+import { Sparkles, Zap, Globe, Target, Shield, Layers, Cpu } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import type { Variants } from 'framer-motion'
-import { useTheme } from '@/context/theme-context'
-import PageAssemblyAnimationWithProps from '@/components/analysis-matcher/page-assembly-with-props'
-const transitionVariants: {
-    container?: Variants;
-    item: Variants;
-} = {
-    item: {
-        hidden: {
-            opacity: 0,
-            filter: 'blur(12px)',
-            y: 12,
-        },
-        visible: {
-            opacity: 1,
-            filter: 'blur(0px)',
-            y: 0,
-            transition: {
-                type: 'spring' as const,
-                bounce: 0.3,
-                duration: 1.5,
-            },
-        },
-    },
-}
-const jobDetails = {
-    jobTitle: "Data Scientist",
-    company: "AI Corp",
-    location: "Boston, MA",
-    matchScore: 82
-}
-const platforms = [
-    { name: 'LinkedIn', icon: '/linkedin.svg' },
-    { name: 'Indeed', icon: '/indeed.svg' },
-    { name: 'Glassdoor', icon: '/glassdoor.svg' },
-    { name: 'Monster', icon: '/monster.svg' },
-    { name: 'ZipRecruiter', icon: '' },
-    { name: 'AngelList', icon: '/wellfound.svg' },
-    { name: 'Company Sites', icon: null },
-    { name: 'Any Board', icon: null }
-]
+import FileUpload from '@/components/file-upload'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { useResumeStore } from '@/store/resume-store'
 
 export function HeroSection() {
+    const router = useRouter()
+    const { setSelectedResumeId } = useResumeStore()
+    const [isHovered, setIsHovered] = useState(false)
+
+    const handleUploadSuccess = async (resume_id: string) => {
+        setSelectedResumeId(resume_id)
+        toast.success("Identity Synced", {
+            description: "Calculating market alignment...",
+        })
+        setTimeout(() => router.push('/matches'), 1500)
+    }
+
     return (
         <>
             <HeroHeader />
-            <main className="overflow-hidden">
-                <div
-                    aria-hidden
-                    className="z-[2] absolute inset-0 pointer-events-none isolate opacity-50 contain-strict hidden lg:block">
-                    <div className="w-[35rem] h-[80rem] -translate-y-[350px] absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
-                    <div className="h-[80rem] absolute left-0 top-0 w-56 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
-                    <div className="h-[80rem] -translate-y-[350px] absolute left-0 top-0 w-56 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
+            <main className="relative min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
+                {/* Background Neural Network Viz (SVG) */}
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+                    <NeuralBackground />
                 </div>
-                <section>
-                    <div className="relative pt-24 md:pt-36">
 
-                        <div aria-hidden className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]" />
-                        <div className="mx-auto max-w-7xl px-6">
-                            <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
-                                <AnimatedGroup variants={transitionVariants}>
-                                    <Link
-                                        href="#link"
-                                        className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950">
-                                        <span className="text-foreground text-sm">Introducing AI-Powered Career Tools</span>
-                                        <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
+                <div className="relative z-10 w-full max-w-7xl px-6 flex flex-col items-center text-center">
+                    {/* Badge */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass px-4 py-1.5 rounded-full mb-8 flex items-center gap-2 border-white/30"
+                    >
+                        <Sparkles className="size-3.5 text-primary" />
+                        <span className="text-[10px] uppercase tracking-widest font-bold">Vector Version 4.0 Live</span>
+                    </motion.div>
 
-                                        <div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
-                                            <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
-                                                <span className="flex size-6">
-                                                    <ArrowRight className="m-auto size-3" />
-                                                </span>
-                                                <span className="flex size-6">
-                                                    <ArrowRight className="m-auto size-3" />
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </Link>
+                    {/* Headline */}
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground mb-6"
+                    >
+                        The Neural Link to <br />
+                        <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent italic">
+                            Your Next Role.
+                        </span>
+                    </motion.h1>
 
+                    <motion.p 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 md:mb-12 leading-relaxed"
+                    >
+                        Move beyond search. CareerForge uses a Dual-Vector algorithm to physically map your experience to the global market in real-time.
+                    </motion.p>
 
+                    {/* Central Matching Hub (Drop Zone) */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4, type: 'spring' }}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                        className="relative group cursor-default w-full max-w-xl"
+                    >
+                        {/* Glow effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                        
+                        <div className="relative glass-panel p-6 sm:p-8 md:p-12 w-full border-white/30 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)]">
+                            <div className="flex flex-col items-center gap-4 sm:gap-6">
+                                <div className="size-12 sm:size-16 rounded-2xl sm:rounded-3xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                                    <Cpu className={cn("size-6 sm:size-8 text-primary transition-transform duration-500", isHovered ? "scale-110" : "")} />
+                                </div>
+                                <div className="space-y-1 sm:space-y-2">
+                                    <h2 className="text-xl sm:text-2xl font-bold">Sync Your Profile</h2>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">Drop your resume here to initialize vector alignment.</p>
+                                </div>
+                                
+                                <div className="w-full">
+                                    <FileUpload onUploadComplete={handleUploadSuccess} />
+                                </div>
 
-                                </AnimatedGroup>
-
-
-
-                                {/* Trust badges */}
-                                <AnimatedGroup
-                                    variants={{
-                                        container: {
-                                            visible: {
-                                                transition: {
-                                                    staggerChildren: 0.1,
-                                                    delayChildren: 1,
-                                                },
-                                            },
-                                        },
-                                        item: transitionVariants.item,
-                                    }}
-                                    className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle2 className="size-4 text-green-500" />
-                                        <span>Free to start</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="size-4 text-blue-500" />
-                                        <span>Save 10+ hours per week</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Zap className="size-4 text-yellow-500" />
-                                        <span>Land jobs 3x faster</span>
-                                    </div>
-                                </AnimatedGroup>
+                                <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 transition-opacity group-hover:opacity-100">
+                                    <span className="flex items-center gap-1"><Shield className="size-2.5 sm:size-3" /> Encrypted</span>
+                                    <span className="opacity-20 hidden xs:inline">|</span>
+                                    <span className="flex items-center gap-1"><Globe className="size-2.5 sm:size-3" /> Global Market</span>
+                                    <span className="opacity-20 hidden xs:inline">|</span>
+                                    <span className="flex items-center gap-1"><Layers className="size-2.5 sm:size-3" /> ATS Vectorized</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </motion.div>
 
-                {/* Key Features Section */}
-                <section className="bg-background pb-16 pt-24 md:pb-32 md:pt-32">
-                    <div className="mx-auto max-w-7xl px-6">
-                        <div className="text-center mb-16">
-                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4">
-                                Everything you need to land your dream job
-                            </h2>
-                            {/* <div className="mt-8 mb-12 max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-border/50 aspect-video relative group">
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    src="https://www.youtube.com/embed/H7viGpV0XEo?autoplay=1&mute=1&controls=0&loop=1&playlist=H7viGpV0XEo&modestbranding=1&rel=0"
-                                    title="Bhai Kaam Do Product Demo"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full"
-                                ></iframe>
-                                <div className="absolute inset-0 bg-transparent pointer-events-none group-hover:bg-black/5 transition-colors duration-300" />
-                            </div> */}
-                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                                Powerful AI-driven tools that work together to streamline your entire job search journey
-                            </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-8">
-                            {features.map((feature, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-muted/50 rounded-2xl border p-6 hover:border-foreground/20 transition-all duration-300 hover:shadow-lg">
-                                    <div className="bg-background rounded-xl size-12 flex items-center justify-center mb-4">
-                                        <feature.icon className="size-6 text-foreground" />
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                                    <p className="text-muted-foreground">{feature.description}</p>
+                    {/* Secondary Metrics */}
+                    <div className="mt-12 md:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 w-full max-w-5xl px-2">
+                        {[
+                            { icon: Target, label: "Match Accuracy", val: "99.4%" },
+                            { icon: Zap, label: "Sync Speed", val: "Instant" },
+                            { icon: Globe, label: "Active Roles", val: "1.2M+" },
+                            { icon: Shield, label: "Privacy Shield", val: "Active" }
+                        ].map((stat, i) => (
+                            <motion.div 
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 + (i * 0.1) }}
+                                className="flex flex-col items-center gap-1 sm:gap-2"
+                            >
+                                <div className="size-8 sm:size-10 rounded-xl sm:rounded-2xl glass flex items-center justify-center border-white/20">
+                                    <stat.icon className="size-4 sm:size-5 text-primary" />
                                 </div>
-                            ))}
-                        </div>
+                                <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center line-clamp-1">{stat.label}</span>
+                                <span className="text-lg sm:text-xl font-bold tracking-tighter">{stat.val}</span>
+                            </motion.div>
+                        ))}
                     </div>
-                </section>
+                </div>
 
-                {/* How It Works Section */}
-                <section className="bg-muted/30 py-16 md:py-32">
-                    <div className="mx-auto max-w-7xl px-6">
-                        <div className="text-center mb-16">
-                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4">
-                                How Bhai Kaam Do Works
-                            </h2>
-                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                                A simple three-step process to transform your job search
-                            </p>
-                        </div>
+                {/* Bottom Gradient Fade */}
+                <div className="absolute bottom-0 w-full h-64 bg-gradient-to-t from-background to-transparent z-10" />
+            </main>
 
-                        <div className="grid md:grid-cols-3 gap-8 md:gap-12">
-                            {steps.map((step, index) => (
-                                <div key={index} className="relative text-center">
-                                    <div className="bg-foreground text-background rounded-full size-16 flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                                        {index + 1}
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                                    <p className="text-muted-foreground">{step.description}</p>
-                                    {index < steps.length - 1 && (
-                                        <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-border" />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+            {/* Feature Bento Grid */}
+            <section className="relative z-10 py-32 px-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Ecosystem Intelligence</h2>
+                        <p className="text-muted-foreground text-lg">Four integrated layers working in perfect synthesis.</p>
                     </div>
-                </section>
 
-                {/* Page Assembly Animation */}
-                <section className="bg-background py-16 md:py-32 overflow-hidden">
-                    <div className="mx-auto max-w-7xl px-6">
-                        <PageAssemblyAnimationWithProps
-                            {...jobDetails}
-                            autoPlay={false}
-                            playOnScroll={true}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <BentoCard 
+                            title="Dual-Vector Core" 
+                            desc="Not just keyword matching. We use embedding models to find semantic alignment between your soul and the job description." 
+                            icon={Cpu}
+                            className="lg:col-span-2 lg:row-span-2"
+                        />
+                         <BentoCard 
+                            title="Reality Sync" 
+                            desc="Real-time market insights from every major job board on Earth." 
+                            icon={Globe}
+                        />
+                        <BentoCard 
+                            title="Privacy Vault" 
+                            desc="Your data is encrypted using military-grade standards. We never sell your identity." 
+                            icon={Shield}
+                        />
+                        <BentoCard 
+                            title="Cover Letter Neural Gen" 
+                            desc="Generate letters that sound like you, just significantly more persuasive." 
+                            icon={Sparkles}
                         />
                     </div>
-                </section>
-
-                {/* Universal Compatibility Section */}
-                <section className="bg-gradient-to-br from-foreground/5 via-background to-foreground/5 py-16 md:py-24 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(74,222,128,0.1),transparent_50%)]" />
-
-                    <div className="mx-auto max-w-4xl px-6 text-center relative z-10">
-                        <div className="inline-flex items-center gap-2 bg-foreground/10 rounded-full px-4 py-2 mb-6">
-                            <Globe className="size-4 text-foreground" />
-                            <span className="text-sm font-semibold">Industry First Technology</span>
-                        </div>
-
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-foreground via-foreground/80 to-foreground bg-clip-text text-transparent">
-                            Works With Every Job Board. Everywhere.
-                        </h2>
-
-                        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-                            We&apos;re the <span className="font-semibold text-foreground">only platform on the planet</span> that seamlessly integrates with job postings from <span className="font-semibold text-foreground">any website, anywhere in the world</span>. LinkedIn, Indeed, Glassdoor, company career pages—even that niche industry board nobody&apos;s heard of. If it&apos;s online, we&apos;ve got you covered.
-                        </p>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12">
-                            {platforms.map((platform, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-background/50 backdrop-blur-sm rounded-xl border p-4 hover:border-foreground/30 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                                    <div className="h-8 mb-3 flex items-center justify-center">
-                                        {platform.icon ? (
-                                            <Image
-                                                src={platform.icon}
-                                                alt={`${platform.name} logo`}
-                                                width={32}
-                                                height={32}
-                                                className="h-8 w-auto object-contain dark:invert"
-                                            />
-                                        ) : (
-                                            <Globe className="size-8 text-foreground/60" />
-                                        )}
-                                    </div>
-                                    <p className="font-semibold text-sm text-center mb-2">{platform.name}</p>
-                                    <CheckCircle2 className="size-5 text-green-500 mx-auto" />
-                                </div>
-                            ))}
-                        </div>
-
-                        <p className="text-sm text-muted-foreground mt-8 italic">
-                            Install one extension. No manual copying. Just pure magic.
-                        </p>
-                    </div>
-                </section>
-
-
-                {/* Final CTA Section */}
-                <section className="bg-muted/30 py-16 md:py-32">
-                    <div className="mx-auto max-w-4xl px-6 text-center">
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-6">
-                            Ready to transform your job search?
-                        </h2>
-                        <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-                            Start building tailored resumes, tracking applications, and landing interviews faster—all for free.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Button
-                                asChild
-                                size="lg"
-                                className="rounded-xl px-8 text-base">
-                                <Link href="/dashboard">
-                                    <span>Get Started Free</span>
-                                </Link>
-                            </Button>
-                            <Button
-                                asChild
-                                size="lg"
-                                variant="outline"
-                                className="rounded-xl px-8 text-base">
-                                <Link href="/pricing">
-                                    <span>View Pricing</span>
-                                </Link>
-                            </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-6">
-                            No credit card required
-                        </p>
-                    </div>
-                </section>
-            </main>
+                </div>
+            </section>
         </>
     )
 }
 
-const features = [
-    {
-        icon: Target,
-        title: 'AI Resume Builder',
-        description: 'Create tailored resumes that match job descriptions perfectly. Our AI analyzes keywords and optimizes your content for ATS systems.'
-    },
-    // {
-    //     icon: FileText,
-    //     title: 'Job Application Tracker',
-    //     description: 'Track every application in one place. Save jobs from 40+ job boards, monitor status, and never lose track of opportunities.'
-    // },
-    {
-        icon: Sparkles,
-        title: 'AI Cover Letter Generator',
-        description: 'Generate compelling, personalized cover letters in seconds. Using your Resume and Job Description create a tailored cover letter.'
-    },
-    {
-        icon: TrendingUp,
-        title: 'Resume Match Score',
-        description: 'Get instant match scores comparing your resume to job descriptions with personalized recommendations.'
-    },
-    {
-        icon: BarChart3,
-        title: 'Keyword Analyzer',
-        description: 'Extract essential keywords from job descriptions and optimize your resume to get noticed by recruiters.'
-    },
-    // {
-    //     icon: Zap,
-    //     title: 'Autofill Applications',
-    //     description: 'Automate your application process with AI-powered autofill for job application questions and forms.'
-    // }
-]
+interface BentoCardProps {
+    title: string;
+    desc: string;
+    icon: React.ElementType;
+    className?: string;
+}
 
-const steps = [
-    {
-        title: 'Upload Your Resume',
-        description: 'Add your resume or LinkedIn profile. Our AI learns about your experience and skills.'
-    },
-    {
-        title: 'Find & Save Jobs',
-        description: 'Use our extension to save opportunities from any job board. Track everything in one place.'
-    },
-    {
-        title: 'Apply with AI',
-        description: 'Generate tailored resumes and cover letters for each role. Track applications and follow up automatically.'
-    }
-]
-
-
-
-const menuItems = [
-    { name: 'Features', href: '/features' },
-    { name: 'Pricing', href: '/pricing' },
-    { name: 'About', href: '/about' },
-]
-
-export const HeroHeader = () => {
-    const { theme, toggle } = useTheme()
-    const [menuState, setMenuState] = useState(false)
-    const [isScrolled, setIsScrolled] = useState(false)
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
+function BentoCard({ title, desc, icon: Icon, className }: BentoCardProps) {
     return (
-        <header>
-            <nav
-                data-state={menuState && 'active'}
-                className="fixed z-20 w-full px-2 group">
-                <div className={cn('mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12', isScrolled && 'bg-background/50 max-w-4xl rounded-2xl border backdrop-blur-lg lg:px-5')}>
-                    <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
-                        <div className="flex w-full justify-between lg:w-auto">
-                            <Link
-                                href="/"
-                                aria-label="home"
-                                className="flex items-center space-x-2">
-                                <Logo />
-                            </Link>
-
-                            <button
-                                onClick={() => setMenuState(!menuState)}
-                                aria-label={menuState == true ? 'Close Menu' : 'Open Menu'}
-                                className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden">
-                                <Menu className="in-data-[state=active]:rotate-180 group-data-[state=active]:scale-0 group-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
-                                <X className="group-data-[state=active]:rotate-0 group-data-[state=active]:scale-100 group-data-[state=active]:opacity-100 absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 duration-200" />
-                            </button>
-                        </div>
-
-                        <div className="absolute inset-0 m-auto hidden size-fit lg:block">
-                            <ul className="flex gap-8 text-sm">
-                                {menuItems.map((item, index) => (
-                                    <li key={index}>
-                                        <Link
-                                            href={item.href}
-                                            className="text-muted-foreground hover:text-accent-foreground block duration-150">
-                                            <span>{item.name}</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="bg-background group-data-[state=active]:block lg:group-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
-                            <div className="lg:hidden">
-                                <ul className="space-y-6 text-base">
-                                    {menuItems.map((item, index) => (
-                                        <li key={index}>
-                                            <Link
-                                                href={item.href}
-                                                className="text-muted-foreground hover:text-accent-foreground block duration-150">
-                                                <span>{item.name}</span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={toggle}
-                                    className={cn("border border-gray-200 dark:border-gray-700 rounded-md px-2 flex items-center", isScrolled && 'lg:hidden')}>
-                                    {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                                    <span className="ml-2">Theme</span>
-                                </Button>
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="sm"
-                                    className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/signin">
-                                        <span>Login</span>
-                                    </Link>
-                                </Button>
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/signup">
-                                        <span>Sign Up</span>
-                                    </Link>
-                                </Button>
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                                    <Link href="/signup">
-                                        <span>Get Started</span>
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        </header>
+        <motion.div 
+            whileHover={{ y: -5 }}
+            className={cn("glass-panel p-8 group transition-colors hover:bg-white/30", className)}
+        >
+            <div className="size-12 rounded-2xl glass mb-6 flex items-center justify-center border-white/20 group-hover:bg-primary/20 transition-colors">
+                <Icon className="size-6 text-primary" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3">{title}</h3>
+            <p className="text-muted-foreground leading-relaxed">{desc}</p>
+        </motion.div>
     )
 }
 
-const Logo = ({ className }: { className?: string }) => {
+function NeuralBackground() {
     return (
-        <Image
-            src="/output_image.png"
-            alt="Bhai Kaam Do Logo"
-            width={50}
-            height={50}
-            className={className}
-        />
+        <svg width="100%" height="100%" className="overflow-visible">
+            <defs>
+                <linearGradient id="gradient-line" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="var(--color-primary)" />
+                    <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+            </defs>
+            <motion.path 
+                d="M-100,200 Q400,100 900,300 T1900,100" 
+                stroke="url(#gradient-line)" 
+                strokeWidth="1.5" 
+                fill="none"
+                animate={{
+                    d: ["M-100,200 Q400,100 900,300 T1900,100", "M-100,100 Q400,300 900,100 T1900,200"],
+                }}
+                transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
+            />
+            {/* Add more decorative neural paths here if needed */}
+        </svg>
     )
+}
 
+const HeroHeader = () => {
+    return null // We are using the SiteHeader in AppShell now
 }
