@@ -63,7 +63,7 @@ export function HeroSection() {
                     <div className="h-[80rem] absolute left-0 top-0 w-56 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
                     <div className="h-[80rem] -translate-y-[350px] absolute left-0 top-0 w-56 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
                 </div>
-                <section>
+                {/* <section>
                     <div className="relative pt-24 md:pt-36">
                         <div aria-hidden className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]" />
                         <div className="mx-auto max-w-7xl px-6">
@@ -88,7 +88,7 @@ export function HeroSection() {
                                     </Link>
                                 </AnimatedGroup>
 
-                                {/* Trust badges */}
+                              
                                 <AnimatedGroup
                                     variants={{
                                         container: {
@@ -118,7 +118,7 @@ export function HeroSection() {
                             </div>
                         </div>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Key Features Section */}
                 <section className="bg-background pb-16 pt-24 md:pb-32 md:pt-32">
