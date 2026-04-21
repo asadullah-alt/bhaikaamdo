@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-
+import { Button } from "@/components/ui/button";
 function FloatingPaths({ position }: { position: number }) {
     const paths = Array.from({ length: 36 }, (_, i) => ({
         id: i,
@@ -50,70 +50,47 @@ function FloatingPaths({ position }: { position: number }) {
 }
 
 export function BackgroundPaths() {
+    
+
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden mesh-gradient">
-            {/* Background Neural Paths */}
-            <div className="absolute inset-0 opacity-40">
+     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-white dark:bg-neutral-950">
+            <div className="absolute inset-0">
                 <FloatingPaths position={1} />
                 <FloatingPaths position={-1} />
             </div>
 
-            <div className="relative z-10 container mx-auto px-4 text-center">
+            <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className="max-w-2xl mx-auto space-y-12"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 2 }}
+                    className="max-w-4xl mx-auto"
                 >
-                    <div className="space-y-6">
-                        <motion.div 
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="flex justify-center"
+                   
+
+                    <div
+                        className="inline-block group relative bg-gradient-to-b from-black/10 to-white/10 
+                        dark:from-white/10 dark:to-black/10 p-px rounded-2xl backdrop-blur-lg 
+                        overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
+                    >
+                        <Button
+                            variant="ghost"
+                            className="rounded-[1.15rem] px-8 py-6 text-lg font-semibold backdrop-blur-md 
+                            bg-white/95 hover:bg-white/100 dark:bg-black/95 dark:hover:bg-black/100 
+                            text-black dark:text-white transition-all duration-300 
+                            group-hover:-translate-y-0.5 border border-black/10 dark:border-white/10
+                            hover:shadow-md dark:hover:shadow-neutral-800/50"
                         >
-                            <div className="relative size-24">
-                                <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-                                <div className="absolute inset-4 rounded-full border-2 border-primary/10 border-b-primary animate-spin [animation-duration:1.5s] [animation-direction:reverse]" />
-                            </div>
-                        </motion.div>
-
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-foreground">
-                                Neural <span className="text-primary italic">Alignment</span>
-                            </h1>
-                            <p className="text-xs font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">
-                                Reconstructing Opportunity Vectors
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-1 rounded-3xl overflow-hidden shadow-2xl border-white/20 bg-white/5 inline-block">
-                        <div className="px-8 py-5 flex items-center gap-4 bg-white/5 backdrop-blur-3xl rounded-[1.4rem]">
-                             <div className="size-2 bg-green-500 rounded-full animate-ping" />
-                             <span className="text-sm font-bold tracking-tight text-foreground/80">
-                                Synchronizing session with the Match Cluster…
-                             </span>
-                        </div>
-                    </div>
-
-                    <div className="pt-8">
-                        <div className="flex justify-center gap-1.5">
-                            {[0, 1, 2].map((i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0.2 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{
-                                        duration: 0.8,
-                                        repeat: Infinity,
-                                        repeatType: "reverse",
-                                        delay: i * 0.2
-                                    }}
-                                    className="size-1.5 rounded-full bg-primary"
-                                />
-                            ))}
-                        </div>
+                            <span className="opacity-90 group-hover:opacity-100 transition-opacity">
+                               Loading your data...
+                            </span>
+                            <span
+                                className="ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1.5 
+                                transition-all duration-300"
+                            >
+                                →
+                            </span>
+                        </Button>
                     </div>
                 </motion.div>
             </div>

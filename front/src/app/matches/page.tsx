@@ -1,6 +1,8 @@
 "use client"
 
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import AuthGuard from "@/components/auth-guard"
 import { getAuthToken, jobsApi, userApi, resumesApi } from "@/lib/api"
 import { EnrichedMatch } from "@/lib/types"
@@ -11,22 +13,30 @@ import {
     IconTarget,
     IconBuilding,
     IconMapPin,
-    IconCloudUpload
+    IconCalendar,
+    IconRosette,
+    IconBriefcase,
+    IconCloudUpload,
+    IconChartBar
 } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badgeTable"
 import { UserPreferences } from "@/lib/api/user"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Separator } from '@/components/ui/separatorInteractive'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from "@/components/ui/sheet"
 import FileUpload from "@/components/file-upload"
 import { toast } from "sonner"
-import { setCookie } from "@/utils/cookie"
+import { setCookie, getCfAuthCookie } from "@/utils/cookie"
 import { useResumeStore } from "@/store/resume-store"
-import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+import { FileText } from "lucide-react"
+import { OpenJobCoverLetterModal } from "@/components/open-job-cover-letter-modal"
+import { ResumeAnalysisModal } from "@/components/resume-analysis-modal"
 
 
 export default function MatchesPage() {
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState("")
     const [matches, setMatches] = useState<EnrichedMatch[]>([])
     const [searchQuery, setSearchQuery] = useState("")
     const [preferences, setPreferences] = useState<UserPreferences | null>(null)
@@ -36,14 +46,34 @@ export default function MatchesPage() {
     const [weightedCount, setWeightedCount] = useState<number | string>("thousands of")
     const CACHE_KEY = 'enriched_matches_cache_v1'
     const CACHE_EXPIRY = 6 * 60 * 60 * 1000 // 6 hours
+    const router = useRouter()
 
     // Resume analysis state
-    const [analyzing] = useState(false)
+    const [analyzing, setAnalyzing] = useState(false)
+    const [analysisResult, setAnalysisResult] = useState<{
+        original_score: number;
+        new_score: number;
+        skill_comparison: Array<{
+            skill: string;
+            resume_mentions: number;
+            job_mentions: number;
+        }>;
+        improvements: Array<{
+            suggestion: string;
+            lineNumber: string;
+        }>;
+        updated_resume_markdown?: string;
+    } | null>(null)
+    const [resumeId, setResumeId] = useState<string | null>(null)
+    const [analysisError, setAnalysisError] = useState<string | null>(null)
+    const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false)
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false)
 
-    const fetchMatches = useCallback(async (forceRefresh = false) => {
+    const fetchMatches = async (forceRefresh = false) => {
         try {
             const token = getAuthToken()
             if (!token) {
+                setError("Session expired. Please log in again.")
                 setLoading(false)
                 return
             }
@@ -109,7 +139,7 @@ export default function MatchesPage() {
                 try {
                     const postedDate = new Date(m.job_details.datePosted)
                     return postedDate >= oneMonthAgo
-                } catch {
+                } catch (e) {
                     return true
                 }
             })
@@ -138,10 +168,11 @@ export default function MatchesPage() {
             }
         } catch (err: unknown) {
             console.error("Error fetching matches:", err)
+            setError(err instanceof Error ? err.message : "Failed to load matches.")
         } finally {
             setLoading(false)
         }
-    }, [CACHE_EXPIRY, CACHE_KEY, selectedId])
+    }
 
     useEffect(() => {
         const fetchPreferences = async () => {
@@ -186,18 +217,100 @@ export default function MatchesPage() {
             window.removeEventListener('preferences-updated', handlePrefsUpdated)
             window.removeEventListener('resume-uploaded', handleResumeUploaded)
         }
-    }, [fetchMatches])
+    }, [])
 
-    // Fetch resumes to determine resumeId if needed
+    // Fetch resumes to determine resumeId
     useEffect(() => {
-        // Reserved for future use
+        const fetchResumes = async () => {
+            try {
+                const token = getCfAuthCookie()
+                const resumesResponse = await fetch(
+                    `https://resume.bhaikaamdo.com/api/v1/resumes/getAllUserResumes?token=${token}`
+                )
+                const resumesData = await resumesResponse.json()
+
+                if (
+                    !resumesData.data ||
+                    !resumesData.data.resumes ||
+                    !Array.isArray(resumesData.data.resumes) ||
+                    resumesData.data.resumes.length === 0
+                ) {
+                    console.error('No resumes found')
+                    return
+                }
+
+                const defaultResumeId = resumesData.data.default_resume
+                const userResumes = resumesData.data.resumes
+                let targetResumeId = userResumes[0].id
+
+                if (defaultResumeId) {
+                    const defaultResumeExists = userResumes.find((r: { id: string }) => r.id === defaultResumeId)
+                    if (defaultResumeExists) {
+                        targetResumeId = defaultResumeId
+                    }
+                }
+
+                setResumeId(targetResumeId)
+            } catch (error) {
+                console.error('Error fetching resumes:', error)
+            }
+        }
+
+        fetchResumes()
     }, [])
 
     // Reset analysis when selected match changes
+    useEffect(() => {
+        setAnalysisResult(null)
+        setAnalysisError(null)
+        setAnalyzing(false)
+    }, [selectedId])
+
     const analyzeResume = async () => {
-        // Implementation for deep diagnostic analysis
-        // This will eventually trigger the analysis modal
-        console.log("Initializing deep diagnostic...")
+        const token = getCfAuthCookie()
+        if (!resumeId || !selectedId) {
+            console.error('Resume ID or Match ID not available')
+            return
+        }
+
+        try {
+            setAnalyzing(true)
+            setAnalysisError(null)
+            setIsAnalysisModalOpen(true)
+
+            const payload: Record<string, unknown> = {
+                match_id: selectedId,
+                resume_id: resumeId,
+                token: token
+            }
+
+            if (analysisResult) {
+                payload.analysis_again = true
+            }
+
+            const analysisResponse = await fetch('https://resume.bhaikaamdo.com/api/v1/resumes/improveOpenJob', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+
+            const analysisData = await analysisResponse.json()
+            console.log('Analysis Result:', analysisData.data)
+
+            if (analysisData.data) {
+                setAnalysisResult(analysisData.data)
+            } else {
+                // Server may still be processing — surface a friendly retry prompt
+                setAnalysisError("The server is still preparing your analysis. Please try again in a moment.")
+            }
+        } catch (error) {
+            console.error('Error analyzing resume:', error)
+            setAnalysisError("Something went wrong. Please try again.")
+        } finally {
+            setAnalyzing(false)
+        }
     }
 
     const handleUploadSuccess = async (resume_id: string) => {
@@ -229,232 +342,454 @@ export default function MatchesPage() {
 
     return (
         <AuthGuard>
-            <div className="h-screen flex flex-col pt-20 sm:pt-24 overflow-hidden">
-                {/* Search & Filter Dock (Secondary) */}
-                <header className="px-4 sm:px-6 pb-4 sm:pb-6">
-                    <div className="glass px-4 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center justify-between gap-4 border-white/20 max-w-6xl mx-auto">
-                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                             <div className="size-1.5 sm:size-2 bg-primary animate-pulse rounded-full" />
-                             <h1 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-foreground/80">Rec. Engine</h1>
-                        </div>
-                        
-                        <div className="flex-1 max-w-sm relative">
-                            <IconSearch className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-                            <input
-                                placeholder="Search vectors..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 sm:pl-10 pr-4 py-1.5 sm:py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+            <div className="h-[calc(100vh-4rem)] flex flex-col bg-background/50">
+                <header className="px-4 py-4 md:px-6 border-b bg-background shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                                Recommended Matches
+                            </h1>
                         </div>
 
-                        <div className="hidden md:flex items-center gap-4 text-[10px] font-bold text-muted-foreground/60">
-                             <span className="uppercase tracking-widest">Vector: <span className="text-primary">{selectedResumeId?.slice(0, 8) || "None"}</span></span>
-                             {preferences && (
-                                <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-black px-2 py-0.5">
-                                    {preferences.country || "Global"}
-                                </Badge>
-                             )}
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-full md:w-80">
+                                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                <Input
+                                    placeholder="Search jobs..."
+                                    className="pl-10 h-10 w-full"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                <div className="flex-grow flex overflow-hidden px-4 sm:px-6 pb-4 sm:pb-6 gap-6 relative">
-                    {/* Left Sidebar: Results List */}
-                    <aside className={cn(
-                        "w-full md:w-[350px] lg:w-[400px] flex flex-col gap-4 transition-all duration-300",
-                        selectedId && "hidden md:flex" // Hide sidebar on mobile when detail is open
-                    )}>
-                        <div className="glass-panel p-4 flex flex-col h-full">
-                            <div className="flex items-center justify-between mb-4 px-2">
-                                <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">High Alignment ({filteredMatches.length})</h2>
-                                <button className="glass p-1.5 rounded-lg border-white/10 hover:bg-white/20 transition-all" onClick={() => fetchMatches(true)}>
-                                    <IconAdjustmentsHorizontal size={14} className="text-muted-foreground" />
-                                </button>
-                            </div>
-
-                            <div className="flex-grow overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-                                {loading ? (
-                                    [...Array(6)].map((_, i) => (
-                                        <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse border border-white/10" />
-                                    ))
-                                ) : filteredMatches.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
-                                        <div className="size-12 rounded-full border border-dashed border-white/20 flex items-center justify-center">
-                                            <IconSearch size={20} className="text-muted-foreground/40" />
-                                        </div>
-                                        <p className="text-xs font-medium text-muted-foreground">No matches found in this region.</p>
+                <div className="flex-grow flex overflow-hidden">
+                    <aside className="w-full md:w-[350px] lg:w-[380px] flex-shrink-0 md:border-r overflow-y-auto bg-muted/20 p-3 space-y-3">
+                        {preferences && (
+                            <div className="p-3 rounded-lg bg-background border shadow-sm space-y-2 mb-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                                        <IconTarget size={12} />
+                                        <span>Target Preferences</span>
                                     </div>
-                                ) : (
-                                    filteredMatches.map((match) => (
-                                        <JobMatchCard
-                                            key={match.match._id}
-                                            match={match}
-                                            isActive={selectedId === match.match._id}
-                                            onClick={() => setSelectedId(match.match._id || null)}
-                                        />
-                                    ))
-                                )}
+                                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => window.dispatchEvent(new CustomEvent('open-preferences'))}>
+                                        <IconAdjustmentsHorizontal size={12} />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {preferences.country && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-primary/10 text-primary border-none">
+                                            {preferences.country}
+                                        </Badge>
+                                    )}
+                                    {preferences.salary_min && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-green-500/10 text-green-700 border-none">
+                                            ${preferences.salary_min / 1000}k+
+                                        </Badge>
+                                    )}
+                                    {preferences.remote_friendly && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-blue-500/10 text-blue-700 border-none">
+                                            Remote
+                                        </Badge>
+                                    )}
+                                    {preferences.city && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-purple-500/10 text-purple-700 border-none">
+                                            {preferences.city}
+                                        </Badge>
+                                    )}
+                                    {preferences.experience !== null && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-yellow-500/10 text-yellow-700 border-none">
+                                            {preferences.experience}y exp
+                                        </Badge>
+                                    )}
+                                    {preferences.visa_sponsorship && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded h-4 bg-orange-500/10 text-orange-700 border-none">
+                                            Visa
+                                        </Badge>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {!loading && !error && filteredMatches.length > 0 && (
+                            <div className="px-1 py-1 flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <span>Matches Found</span>
+                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    {filteredMatches.length}
+                                </span>
+                            </div>
+                        )}
+
+                        {loading ? (
+                            [...Array(8)].map((_, i) => (
+                                <div key={i} className="h-20 rounded-lg border bg-card animate-pulse" />
+                            ))
+                        ) : error ? (
+                            <div className="p-4 text-center text-destructive text-sm font-medium">{error}</div>
+                        ) : filteredMatches.length === 0 ? (
+                            selectedResumeId ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-5">
+                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                                        <IconBriefcase size={32} className="text-primary" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <p className="text-base font-semibold text-foreground">Matching in progress</p>
+                                        <p className="text-sm text-muted-foreground max-w-[240px]">
+                                            We&apos;re processing your resume against {weightedCount} jobs.
+                                            Please hold on for 10 seconds. This page will display the closest matching jobs...
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-5">
+                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <IconCloudUpload size={32} className="text-primary" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <p className="text-base font-semibold text-foreground">No matches yet</p>
+                                        <p className="text-sm text-muted-foreground max-w-[220px]">
+                                            Upload your CV so we can find the best job matches for you.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={() => setSheetOpen(true)}
+                                    >
+                                        <IconCloudUpload size={16} />
+                                        Upload your CV
+                                    </Button>
+                                </div>
+                            )
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredMatches.map((match) => {
+                                    const matchId = match.match._id;
+                                    if (!matchId) return null;
+
+                                    return (
+                                        <JobMatchCard
+                                            key={matchId}
+                                            match={match}
+                                            isActive={selectedId === matchId}
+                                            onClick={async () => {
+                                                setSelectedId(matchId)
+
+                                                if (match.match.new_matched_job) {
+                                                    const token = getAuthToken();
+                                                    if (token) {
+                                                        try {
+                                                            await jobsApi.markMatchSeen(matchId, token);
+                                                            setMatches(prev => prev.map(m =>
+                                                                m.match._id === matchId
+                                                                    ? { ...m, match: { ...m.match, new_matched_job: false } }
+                                                                    : m
+                                                            ));
+                                                        } catch (err) {
+                                                            console.error("Error marking match as seen:", err);
+                                                        }
+                                                    }
+                                                }
+
+                                                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                                    router.push(`/matches/${encodeURIComponent(matchId)}`)
+                                                }
+                                            }}
+                                        />
+                                    )
+                                })}
+                            </div>
+                        )}
                     </aside>
 
-                    {/* Right Main Content: Detail View */}
-                    <main className={cn(
-                        "flex-1 relative transition-all duration-300",
-                        !selectedId && "hidden md:block" // Hide detail on mobile when sidebar is open
-                    )}>
+                    <main className="hidden md:block flex-1 min-w-0 overflow-y-auto bg-background p-8">
                         {selectedMatch ? (
-                            <div className="h-full glass-panel overflow-hidden flex flex-col relative">
-                                {/* Mobile Back Button */}
-                                <button 
-                                    className="md:hidden absolute top-4 left-4 z-30 size-10 rounded-full glass border-white/20 flex items-center justify-center text-white"
-                                    onClick={() => setSelectedId(null)}
-                                >
-                                    <IconSearch size={18} className="rotate-180" />
-                                </button>
-
-                                {/* Elevated Header Section */}
-                                <div className="relative h-48 sm:h-64 shrink-0 overflow-hidden border-b border-white/10">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent z-0" />
-                                    <div className="absolute -top-12 -right-12 sm:-top-24 sm:-right-24 size-48 sm:size-64 bg-primary/20 blur-[60px] sm:blur-[100px] rounded-full" />
-                                    
-                                    <div className="relative z-10 h-full p-4 sm:p-8 flex flex-col justify-end gap-2 sm:gap-4">
-                                        <div className="flex gap-2">
-                                            <Badge className="bg-white/10 text-white border-white/20 backdrop-blur-md uppercase font-bold text-[8px] sm:text-[10px] px-2 sm:px-3 py-1">
-                                                {selectedMatch.job_details.employmentType}
+                            <div className="max-w-[95%] mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <header className="space-y-3">
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge variant="secondary" className="px-3 py-1">
+                                            {selectedMatch.job_details.employmentType}
+                                        </Badge>
+                                        {selectedMatch.job_details.isRemote && (
+                                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200">
+                                                Remote
                                             </Badge>
-                                            {selectedMatch.job_details.isRemote && (
-                                                <Badge className="bg-primary/20 text-primary border-primary/20 backdrop-blur-md uppercase font-bold text-[8px] sm:text-[10px] px-2 sm:px-3 py-1">
-                                                    Remote
-                                                </Badge>
+                                        )}
+                                        {selectedMatch.job_details.isVisaSponsored && (
+                                            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200">
+                                                Visa Sponsored
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-start gap-6">
+                                        {/* Left: Title + Company + Location + Buttons */}
+                                        <div className="flex-1 space-y-3">
+                                            <h1 className="text-2xl lg:text-4xl font-bold tracking-tight">{selectedMatch.job_details.jobTitle}</h1>
+
+                                            <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-muted-foreground text-sm">
+                                                <div className="flex items-center gap-1.5">
+                                                    <IconBuilding size={16} className="text-primary" />
+                                                    <span className="font-semibold text-foreground">
+                                                        {selectedMatch.job_details.companyProfile?.companyName}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <IconMapPin size={16} />
+                                                    <span>
+                                                        {[
+                                                            selectedMatch.job_details.location?.city,
+                                                            selectedMatch.job_details.location?.state,
+                                                            selectedMatch.job_details.location?.country
+                                                        ].filter(Boolean).join(", ") || selectedMatch.job_details.location?.remoteStatus}
+                                                    </span>
+                                                </div>
+                                                {selectedMatch.job_details.datePosted && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <IconCalendar size={16} />
+                                                        <span>Posted {selectedMatch.job_details.datePosted}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-3 pt-1">
+                                                <Button
+                                                    className="h-9 px-6 font-bold"
+                                                    asChild
+                                                    onClick={async () => {
+                                                        const token = getAuthToken();
+                                                        if (token && selectedMatch.match._id) {
+                                                            try {
+                                                                await jobsApi.markMatchApplied(selectedMatch.match._id, token);
+                                                            } catch (err) {
+                                                                console.error("Error marking match as applied:", err);
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <a href={selectedMatch.job_details.job_url} target="_blank" rel="noopener noreferrer">
+                                                        Apply Now
+                                                    </a>
+                                                </Button>
+                                                <Button variant="outline" className="h-9 px-6" asChild>
+                                                    <Link href={`/matches/${encodeURIComponent(selectedMatch.match._id || '')}`}>Full Page Mode</Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Score Card */}
+                                        <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 text-center min-w-[220px] space-y-2 shrink-0">
+                                            <div className="text-xs font-bold text-muted-foreground uppercase">Match Score</div>
+                                            <div className="text-3xl font-black text-primary">{Math.round(selectedMatch.match.percentage_match)}%</div>
+                                            <div className="flex flex-col gap-1.5 pt-1">
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full h-8 text-xs"
+                                                    onClick={() => {
+                                                        if (analysisResult) {
+                                                            setIsAnalysisModalOpen(true)
+                                                        } else {
+                                                            analyzeResume()
+                                                        }
+                                                    }}
+                                                    disabled={analyzing}
+                                                >
+                                                    {analyzing ? (
+                                                        <>
+                                                            <div className="animate-spin mr-1.5 h-3 w-3 border-2 border-current border-t-transparent rounded-full"></div>
+                                                            Analyzing...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <IconChartBar className="mr-1 h-3 w-3" />
+                                                            {analysisResult ? 'View Analysis' : 'Analyze Resume'}
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full h-8 text-xs"
+                                                    onClick={() => setIsCoverLetterModalOpen(true)}
+                                                >
+                                                    <FileText className="mr-1 h-3 w-3" />
+                                                    Cover Letter
+                                                </Button>
+                                            </div>
+                                            {selectedMatch.match._id && (
+                                                <OpenJobCoverLetterModal
+                                                    isOpen={isCoverLetterModalOpen}
+                                                    onClose={() => setIsCoverLetterModalOpen(false)}
+                                                    matchId={selectedMatch.match._id}
+                                                />
                                             )}
                                         </div>
-                                        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-2xl line-clamp-2 md:line-clamp-none">
-                                            {selectedMatch.job_details.jobTitle}
-                                        </h1>
-                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-white/70">
-                                            <div className="flex items-center gap-1.5">
-                                                <IconBuilding size={14} className="text-primary" />
-                                                <span className="text-white font-bold truncate max-w-[150px]">{selectedMatch.job_details.companyProfile?.companyName}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <IconMapPin size={14} />
-                                                <span className="truncate">{[selectedMatch.job_details.location?.city, selectedMatch.job_details.location?.state].filter(Boolean).join(", ")}</span>
-                                            </div>
-                                        </div>
                                     </div>
-                                </div>
+                                </header>
 
-                                {/* Detail Content Scroll Area */}
-                                <div className="flex-grow overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-12 pb-32 custom-scrollbar">
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-                                            <section className="space-y-3 sm:space-y-4">
-                                                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Market Intent</h2>
-                                                <p className="text-sm sm:text-lg text-foreground leading-relaxed font-medium bg-white/5 p-4 sm:p-6 rounded-2xl border border-white/10 italic">
-                                                    &quot;{selectedMatch.job_details.jobSummary}&quot;
-                                                </p>
-                                            </section>
+                                <Separator />
 
-                                            <section className="space-y-4 sm:space-y-6">
-                                                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Core Vectors</h2>
-                                                <div className="grid gap-2 sm:gap-3">
-                                                    {selectedMatch.job_details.keyResponsibilities?.map((item, i) => (
-                                                        <div key={i} className="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 group">
-                                                            <span className="size-5 sm:size-6 shrink-0 rounded-lg bg-primary/20 text-primary flex items-center justify-center text-[10px] font-black mt-0.5 group-hover:scale-110 transition-transform">{i + 1}</span>
-                                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{item}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        </div>
-
-                                        <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-0">
-                                            <div className="glass bg-white/5 p-6 rounded-3xl border-white/10 space-y-6">
-                                                <div className="space-y-4">
-                                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-center text-muted-foreground">Neural Match</h3>
-                                                    <div className="flex justify-center">
-                                                        <div className="relative size-24 sm:size-32 flex items-center justify-center">
-                                                            <svg className="size-full -rotate-90">
-                                                                <circle cx="50%" cy="50%" r="45%" fill="none" stroke="currentColor" strokeWidth="8" className="text-white/5" />
-                                                                <motion.circle 
-                                                                    cx="50%" 
-                                                                    cy="50%" 
-                                                                    r="45%" 
-                                                                    fill="none" 
-                                                                    stroke="currentColor" 
-                                                                    strokeWidth="8" 
-                                                                    strokeDasharray="283%" 
-                                                                    initial={{ strokeDashoffset: "283%" }} 
-                                                                    animate={{ strokeDashoffset: `${283 - (283 * selectedMatch.match.percentage_match) / 100}%` }} 
-                                                                    transition={{ duration: 2, ease: "circOut" }} 
-                                                                    className="text-primary drop-shadow-[0_0_10px_rgba(var(--primary),0.5)]" 
-                                                                />
-                                                            </svg>
-                                                            <span className="absolute text-xl sm:text-2xl font-black">{Math.round(selectedMatch.match.percentage_match)}%</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex flex-col gap-3 pt-4">
-                                                    <Button className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20" asChild>
-                                                        <a href={selectedMatch.job_details.job_url} target="_blank">Deploy Application</a>
-                                                    </Button>
-                                                    <Button variant="outline" className="w-full h-12 rounded-xl font-bold bg-white/5 border-white/10" onClick={() => analyzeResume()}>
-                                                        {analyzing ? "Syncing..." : "View Alignment Data"}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                {selectedMatch.job_details.extractedKeywords && selectedMatch.job_details.extractedKeywords.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {selectedMatch.job_details.extractedKeywords.map((keyword: string, index: number) => (
+                                            <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-none hover:bg-primary/20 transition-colors">
+                                                {keyword}
+                                            </Badge>
+                                        ))}
                                     </div>
-                                </div>
+                                )}
+
+                                <section className="space-y-4">
+                                    <h2 className="text-2xl font-bold">Job Summary</h2>
+                                    <p className="text-muted-foreground leading-relaxed text-lg italic bg-primary/5 p-4 rounded-xl border-l-4 border-primary">
+                                        {selectedMatch.job_details.jobSummary || "No summary available."}
+                                    </p>
+                                </section>
+
+                                {selectedMatch.job_details.keyResponsibilities && (
+                                    <section className="space-y-4">
+                                        <h2 className="text-2xl font-bold">Key Responsibilities</h2>
+                                        <ul className="grid gap-3">
+                                            {selectedMatch.job_details.keyResponsibilities.map((item, i) => (
+                                                <li key={i} className="flex gap-3">
+                                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
+                                                    <span className="text-muted-foreground leading-relaxed">{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
+
+                                {selectedMatch.job_details.qualifications && (
+                                    <section className="space-y-6">
+                                        <h2 className="text-2xl font-bold">Qualifications</h2>
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold flex items-center gap-2"><IconRosette className="text-primary" />Required</h3>
+                                            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                                                {selectedMatch.job_details.qualifications.required.map((q, i) => <li key={i}>{q}</li>)}
+                                            </ul>
+                                        </div>
+                                    </section>
+                                )}
+
+                                <ResumeAnalysisModal
+                                    isOpen={isAnalysisModalOpen}
+                                    onClose={() => setIsAnalysisModalOpen(false)}
+                                    analyzing={analyzing}
+                                    analysisResult={analysisResult}
+                                    analysisError={analysisError}
+                                    onAnalyzeAgain={analyzeResume}
+                                    jobTitle={selectedMatch.job_details.jobTitle ?? undefined}
+                                />
                             </div>
                         ) : (
-                            <div className="h-full glass-panel flex flex-col items-center justify-center p-6 sm:p-12 text-center">
+                            <div className="h-full flex flex-col items-center justify-center gap-10 px-8">
+                                <style>{`
+                                    @keyframes cf-orbit {
+                                        from { transform: rotate(0deg) translateX(72px) rotate(0deg); }
+                                        to   { transform: rotate(360deg) translateX(72px) rotate(-360deg); }
+                                    }
+                                    @keyframes cf-orbit2 {
+                                        from { transform: rotate(120deg) translateX(72px) rotate(-120deg); }
+                                        to   { transform: rotate(480deg)  translateX(72px) rotate(-480deg); }
+                                    }
+                                    @keyframes cf-orbit3 {
+                                        from { transform: rotate(240deg) translateX(72px) rotate(-240deg); }
+                                        to   { transform: rotate(600deg)  translateX(72px) rotate(-600deg); }
+                                    }
+                                    @keyframes cf-float {
+                                        0%,100% { transform: translateY(0); }
+                                        50%      { transform: translateY(-10px); }
+                                    }
+                                    @keyframes cf-arrow {
+                                        0%   { transform: translateY(6px);  opacity: 0; }
+                                        50%  { transform: translateY(0);    opacity: 1; }
+                                        100% { transform: translateY(-6px); opacity: 0; }
+                                    }
+                                    @keyframes cf-dot {
+                                        0%,100% { opacity: 0.25; transform: scale(0.8); }
+                                        50%      { opacity: 1;    transform: scale(1.2); }
+                                    }
+                                    @keyframes cf-ping-slow {
+                                        0%   { transform: scale(1);   opacity: 0.5; }
+                                        100% { transform: scale(1.9); opacity: 0; }
+                                    }
+                                `}</style>
+
                                 {selectedResumeId ? (
-                                    <div className="space-y-6 sm:space-y-8 max-w-md">
-                                        <div className="relative size-32 sm:size-48 mx-auto flex items-center justify-center">
-                                            {/* Neural Cord Animation */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                {[...Array(3)].map((_, i) => (
-                                                    <motion.div
-                                                        key={i}
-                                                        className="absolute rounded-full border border-primary/30"
-                                                        initial={{ width: 40, height: 40, opacity: 0 }}
-                                                        animate={{ 
-                                                            width: [40, 160], 
-                                                            height: [40, 160], 
-                                                            opacity: [0, 0.5, 0],
-                                                            rotate: [0, 180, 360]
-                                                        }}
-                                                        transition={{ 
-                                                            duration: 3, 
-                                                            repeat: Infinity, 
-                                                            delay: i * 1,
-                                                            ease: "linear"
-                                                        }}
-                                                    />
+                                    <>
+                                        <div className="relative w-44 h-44 flex items-center justify-center">
+                                            <span className="absolute inset-0 rounded-full border border-primary/30"
+                                                style={{ animation: 'cf-ping-slow 2.4s ease-out infinite' }} />
+                                            <span className="absolute inset-0 rounded-full border border-primary/20"
+                                                style={{ animation: 'cf-ping-slow 2.4s ease-out 1.2s infinite' }} />
+
+                                            <div className="z-10 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shadow-lg"
+                                                style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
+                                                <IconBriefcase size={38} className="text-primary" />
+                                            </div>
+
+                                            {[
+                                                { anim: 'cf-orbit  3.6s linear infinite', color: 'bg-primary', size: 'w-3   h-3' },
+                                                { anim: 'cf-orbit2 3.6s linear infinite', color: 'bg-primary/60', size: 'w-2.5 h-2.5' },
+                                                { anim: 'cf-orbit3 3.6s linear infinite', color: 'bg-primary/80', size: 'w-2   h-2' },
+                                            ].map((o, i) => (
+                                                <span key={i}
+                                                    className={`absolute rounded-full ${o.color} ${o.size} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+                                                    style={{ animation: o.anim }} />
+                                            ))}
+                                        </div>
+
+                                        <div className="text-center space-y-3 max-w-sm">
+                                            <p className="text-xl font-bold text-foreground">Matching in progress</p>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                We&apos;re processing your resume against {weightedCount} jobs.
+                                                Please hold on for 10 seconds. This page will display the closest matching jobs...
+                                            </p>
+                                            <div className="flex items-center justify-center gap-1.5 pt-1">
+                                                {[0, 0.4, 0.8].map((delay, i) => (
+                                                    <span key={i}
+                                                        className="w-2 h-2 rounded-full bg-primary/50"
+                                                        style={{ animation: `cf-dot 1.2s ease-in-out ${delay}s infinite` }} />
                                                 ))}
                                             </div>
-                                            <div className="z-10 size-16 sm:size-20 rounded-3xl glass flex items-center justify-center shadow-2xl border-white/30 rotate-12">
-                                                <IconTarget size={30} className="text-primary animate-pulse sm:size-[40px]" />
-                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Syncing Neural Vectors</h2>
-                                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Scanning the global market logic for {weightedCount} alignment points.</p>
-                                        </div>
-                                    </div>
+                                    </>
                                 ) : (
-                                    <div className="space-y-6">
-                                         <div className="size-20 sm:size-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center">
-                                            <IconCloudUpload size={30} className="text-primary sm:size-[40px]" />
-                                         </div>
-                                         <h2 className="text-xl sm:text-2xl font-bold">Neural Engine Offline</h2>
-                                         <p className="text-xs sm:text-sm text-muted-foreground max-w-[240px] sm:max-w-xs mx-auto">Upload your career vector to activate the global matching engine.</p>
-                                         <Button onClick={() => setSheetOpen(true)} className="rounded-xl px-6 sm:px-8 h-10 sm:h-12 font-bold text-sm sm:text-base">Activate Engine</Button>
-                                    </div>
+                                    <>
+                                        <div style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
+                                            <svg width="140" height="110" viewBox="0 0 140 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M105 70 Q112 70 116 63 Q124 62 124 53 Q124 43 115 40
+                                                         Q113 28 102 25 Q96 12 80 14 Q70 8 58 15
+                                                         Q44 15 40 27 Q28 30 26 42 Q18 45 18 55
+                                                         Q18 64 26 66 Q30 71 36 71 Z"
+                                                    fill="currentColor" className="text-primary/10"
+                                                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+
+                                                <g style={{ animation: 'cf-arrow 1.6s ease-in-out infinite' }}>
+                                                    <line x1="70" y1="95" x2="70" y2="57" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="text-primary" />
+                                                    <polyline points="56,68 70,55 84,68" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-primary" fill="none" />
+                                                </g>
+
+                                                <circle cx="28" cy="30" r="3" fill="currentColor" className="text-primary/30" style={{ animation: 'cf-dot 2s ease-in-out 0s infinite' }} />
+                                                <circle cx="112" cy="26" r="2.5" fill="currentColor" className="text-primary/30" style={{ animation: 'cf-dot 2s ease-in-out 0.7s infinite' }} />
+                                                <circle cx="120" cy="72" r="2" fill="currentColor" className="text-primary/20" style={{ animation: 'cf-dot 2s ease-in-out 1.3s infinite' }} />
+                                            </svg>
+                                        </div>
+
+                                        <div className="text-center space-y-3 max-w-sm">
+                                            <p className="text-xl font-bold text-foreground">Ready to find your dream job?</p>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                Upload your CV and we&apos;ll match you against thousands of relevant job openings automatically.
+                                            </p>
+                                            <Button size="sm" className="gap-2 mt-1" onClick={() => setSheetOpen(true)}>
+                                                <IconCloudUpload size={16} />
+                                                Upload your CV
+                                            </Button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         )}

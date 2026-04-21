@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Features } from '@/components/features'
+import { HeroHeader } from '@/components/hero-section-1'
 import { Zap, Cpu, Users } from 'lucide-react'
 
 const sampleFeatures = [
@@ -44,8 +45,11 @@ const sampleFeatures = [
 
 export default function FeaturesPage() {
   return (
-    <div className="pt-24">
-      <Features features={sampleFeatures} progressGradientLight="bg-sky-400" progressGradientDark="bg-sky-600" />
-    </div>
+    <>
+      <HeroHeader />
+      
+        <Features features={sampleFeatures} progressGradientLight="bg-sky-400" progressGradientDark="bg-sky-600" />
+      
+    </>
   )
 }

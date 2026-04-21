@@ -7,8 +7,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import FileUpload from "@/components/file-upload"
 import { usePathname, useRouter } from "next/navigation"
 import { resumesApi } from "@/lib/api"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
-import { UploadCloud, ChevronDown, BookOpenCheck, Download, Briefcase, Settings, LogOut } from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from "@/components/ui/sheet"
+import { UploadCloud, Mail, ChevronDown, BookOpenCheck, Download, Briefcase, Settings, Menu, LogOut } from "lucide-react"
 import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/context/theme-context'
 import { userApi } from "@/lib/api"
@@ -21,7 +21,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { getCfAuthCookie, setCookie } from "@/utils/cookie"
 import { useResumeStore } from "@/store/resume-store"
 
@@ -41,7 +49,8 @@ const buttonAnimationStyle = `
 export function SiteHeader() {
   const router = useRouter()
   const pathname = usePathname() || "/"
-  const title = pathname.startsWith("/lifecycle") ? "Lifecycle" : "Dashboard"
+  const isLifecycle = pathname.startsWith("/lifecycle")
+  const title = isLifecycle ? "Lifecycle" : "Dashboard"
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const { selectedResumeId, setSelectedResumeId } = useResumeStore()
@@ -65,8 +74,10 @@ export function SiteHeader() {
     // 4. Close the sheet
     setSheetOpen(false);
   };
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [resumes, setResumes] = useState<Array<{ id: string; resume_name?: string }>>([])
   const [loadingResumes, setLoadingResumes] = useState(false)
+  const [blinkingButton, setBlinkingButton] = useState<string | null>(null)
   const [preferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null)
 
@@ -92,8 +103,9 @@ export function SiteHeader() {
     }
   }, [])
 
-  const handleButtonClick = () => {
-    // Animation logic removed as it was incomplete
+  const handleButtonClick = (buttonId: string) => {
+    setBlinkingButton(buttonId)
+    setTimeout(() => setBlinkingButton(null), 600)
   }
 
   const { theme, toggle } = useTheme()
@@ -231,143 +243,227 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4">
-      <div className="glass h-14 rounded-full flex items-center px-3 sm:px-4 gap-1 sm:gap-2 shadow-2xl border-white/20 max-w-full">
-        <div className="flex items-center gap-1">
-          <SidebarTrigger className="-ml-1 text-foreground/80 hover:bg-white/20 rounded-full" />
-          <Separator
-            orientation="vertical"
-            className="mx-1 sm:mx-2 h-4 bg-white/20"
-          />
-          <h1
-            className={`text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap ${title === 'Dashboard' ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-            role={title === 'Dashboard' ? 'button' : undefined}
-            tabIndex={title === 'Dashboard' ? 0 : undefined}
-            onClick={() => {
-              if (title === 'Dashboard') router.push('/dashboard')
-            }}
-          >
-            {title}
-          </h1>
-        </div>
+    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+        <SidebarTrigger className="-ml-1" />
+        <Separator
+          orientation="vertical"
+          className="mx-2 data-[orientation=vertical]:h-4"
+        />
+        <h1
+          className={`text-base font-medium ${title === 'Dashboard' ? 'cursor-pointer' : ''}`}
+          role={title === 'Dashboard' ? 'button' : undefined}
+          tabIndex={title === 'Dashboard' ? 0 : undefined}
+          onClick={() => {
+            if (title === 'Dashboard') router.push('/dashboard')
+          }}
+          onKeyDown={(e) => {
+            if ((e as React.KeyboardEvent).key === 'Enter' && title === 'Dashboard') router.push('/dashboard')
+          }}
+        >
+          {title}
+        </h1>
 
-        <div className="mx-1 h-4 w-px bg-white/10 hidden xs:block sm:block" />
-
-        <div className="hidden sm:flex items-center gap-1.5 px-2">
+        <div className="ml-4 hidden sm:flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              handleButtonClick()
+              handleButtonClick('matches')
               router.push('/matches')
             }}
-            className={`h-9 rounded-full px-3 text-xs font-medium transition-all hover:bg-white/20 hover:text-foreground ${pathname === '/matches' ? 'bg-white/30 text-primary shadow-sm' : 'text-foreground/70'}`}
+            className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'matches' ? 'animate-double-blink' : ''}`}
           >
-            <Briefcase className="size-4 mr-1.5" />
-            <span className="hidden lg:inline">Matches</span>
+            <Briefcase className="size-4 mr-2" />
+            <span className="hidden md:inline">Matched Jobs</span>
           </Button>
-
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              handleButtonClick()
+              handleButtonClick('upload')
               setSheetOpen(true)
             }}
-            className="h-9 rounded-full px-3 text-xs font-medium text-foreground/70 transition-all hover:bg-white/20 hover:text-foreground"
+            className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'upload' ? 'animate-double-blink' : ''}`}
           >
-            <UploadCloud className="size-4 mr-1.5" />
-            <span className="hidden lg:inline">Upload</span>
+            <UploadCloud className="size-4 mr-2" />
+            <span className="hidden md:inline">Upload Base CV</span>
           </Button>
-
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'email' ? 'animate-double-blink' : ''}`}
+            onClick={() => {
+              handleButtonClick('email')
+              setEmailModalOpen(true)
+            }}
+          >
+            <Mail className="size-4 mr-2" />
+            <span className="hidden md:inline">Connect with Email</span>
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              handleButtonClick()
+              handleButtonClick('resumebuilder')
               router.push('/dashboard/resumes')
             }}
-            className={`h-9 rounded-full px-3 text-xs font-medium transition-all hover:bg-white/20 hover:text-foreground ${pathname.startsWith('/dashboard/resumes') ? 'bg-white/30 text-primary shadow-sm' : 'text-foreground/70'}`}
+            className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'resumebuilder' ? 'animate-double-blink' : ''}`}
           >
-            <BookOpenCheck className="size-4 mr-1.5" />
-            <span className="hidden lg:inline">Builder</span>
+            <BookOpenCheck className="size-4 mr-2" />
+            <span className="hidden md:inline">Resume Builder</span>
           </Button>
-          
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              handleButtonClick()
+              handleButtonClick('extension')
               window.open('https://chromewebstore.google.com/detail/bhaikaamdo-streamline-you/cfhjopkjaegoadmcfmepdbnmkikkpjjk', '_blank')
             }}
-            className="h-9 rounded-full px-3 text-xs font-medium text-foreground/70 transition-all hover:bg-white/20 hover:text-foreground"
+            className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'extension' ? 'animate-double-blink' : ''}`}
           >
-            <Download className="size-4 mr-1.5" />
-            <span className="hidden lg:inline">Extension</span>
+            <Download className="size-4 mr-2" />
+            <span className="hidden md:inline">Download extension</span>
           </Button>
         </div>
 
-        <div className="mx-1 h-4 w-px bg-white/10" />
+        {/* Mobile-only "More" dropdown — shows all hidden actions */}
+        <div className="ml-2 flex sm:hidden items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="border border-gray-200 dark:border-gray-700 rounded-md px-2">
+                <Menu className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
 
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          {/* Resume Selector */}
+              <DropdownMenuItem onClick={() => { handleButtonClick('matches'); router.push('/matches') }}>
+                <Briefcase className="size-4 mr-2" />Matched Jobs
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => { handleButtonClick('upload'); setSheetOpen(true) }}>
+                <UploadCloud className="size-4 mr-2" />Upload Base CV
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => { handleButtonClick('email'); setEmailModalOpen(true) }}>
+                <Mail className="size-4 mr-2" />Connect with Email
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => { handleButtonClick('resumebuilder'); router.push('/dashboard/resumes') }}>
+                <BookOpenCheck className="size-4 mr-2" />Resume Builder
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => { handleButtonClick('extension'); window.open('https://chromewebstore.google.com/detail/bhaikaamdo-streamline-you/cfhjopkjaegoadmcfmepdbnmkikkpjjk', '_blank') }}>
+                <Download className="size-4 mr-2" />Download Extension
+              </DropdownMenuItem>
+
+              {resumes.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Active Resume</DropdownMenuLabel>
+                  {resumes.map((resume) => (
+                    <DropdownMenuItem
+                      key={resume.id}
+                      onClick={() => handleSetDefaultResume(resume.id)}
+                      className={selectedResumeId === resume.id ? 'bg-accent' : ''}
+                    >
+                      <span className="text-sm truncate">{getResumeDisplayName(resume)}</span>
+                      {selectedResumeId === resume.id && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => { handleButtonClick('settings'); setPreferencesModalOpen(true) }}>
+                <Settings className="size-4 mr-2" />Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { handleButtonClick('logout'); handleLogout() }} className="text-red-500 focus:text-red-500">
+                <LogOut className="size-4 mr-2" />Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Email Modal */}
+        <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Connect with Email</DialogTitle>
+              <DialogDescription>
+                Coming soon, but thanks for clicking!
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* Resume Selector Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 rounded-full px-2 sm:px-3 text-[10px] sm:text-xs font-medium border border-white/10 bg-white/10 hover:bg-white/20 gap-1 sm:gap-2 min-w-[60px] sm:min-w-[100px]"
+                className="border border-gray-200 dark:border-gray-700 rounded-md px-2 hidden sm:flex items-center gap-1"
                 disabled={loadingResumes || resumes.length === 0}
               >
-                <span className="truncate max-w-[50px] sm:max-w-[80px]">
-                  {loadingResumes ? '...' : selectedResumeId ? getResumeDisplayName(resumes.find(r => r.id === selectedResumeId) || { id: selectedResumeId }) : 'Resume'}
+                <span className="text-xs truncate max-w-[150px]">
+                  {loadingResumes ? 'Loading...' : selectedResumeId ? getResumeDisplayName(resumes.find(r => r.id === selectedResumeId) || { id: selectedResumeId }) : 'Select Resume'}
                 </span>
-                <ChevronDown className="size-3 opacity-50" />
+                <ChevronDown className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass w-56 rounded-2xl p-2 border-white/20 shadow-2xl mt-2 backdrop-blur-3xl">
-              <DropdownMenuLabel className="px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest pb-2">Active Resume</DropdownMenuLabel>
-              {resumes.map((resume) => (
-                <DropdownMenuItem
-                  key={resume.id}
-                  onClick={() => handleSetDefaultResume(resume.id)}
-                  className={`rounded-lg mb-1 py-2 px-3 text-sm focus:bg-white/20 transition-colors ${selectedResumeId === resume.id ? 'bg-primary/20 text-primary font-semibold' : ''}`}
-                >
-                  <span className="truncate">{getResumeDisplayName(resume)}</span>
-                  {selectedResumeId === resume.id && <span className="ml-auto">✓</span>}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Active Resume</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {resumes.length > 0 ? (
+                resumes.map((resume) => (
+                  <DropdownMenuItem
+                    key={resume.id}
+                    onClick={() => handleSetDefaultResume(resume.id)}
+                    className={selectedResumeId === resume.id ? 'bg-accent' : ''}
+                  >
+                    <span className="text-sm">{getResumeDisplayName(resume)}</span>
+                    {selectedResumeId === resume.id && <span className="ml-2">✓</span>}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  No resumes found
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggle} 
-            className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-white/20 transition-all"
-          >
-            {theme === 'dark' ? <Sun className="size-3.5 sm:size-4" /> : <Moon className="size-3.5 sm:size-4" />}
+          <Button variant="ghost" size="sm" onClick={() => { console.log('[SiteHeader] toggle clicked'); handleButtonClick('theme'); toggle() }} className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'theme' ? 'animate-double-blink' : ''}`}>
+            {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+
           </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-white/20 transition-all"
-              >
-                <Settings className="size-3.5 sm:size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass w-48 rounded-2xl p-2 border-white/20 mt-2">
-               <DropdownMenuItem onClick={() => setPreferencesModalOpen(true)} className="rounded-lg py-2">
-                <Settings className="size-4 mr-2" /> Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="rounded-lg py-2 text-red-500 focus:text-red-500 focus:bg-red-500/10">
-                <LogOut className="size-4 mr-2" /> Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              handleButtonClick('settings')
+              setPreferencesModalOpen(true)
+            }}
+            className={`hidden sm:flex border border-gray-200 dark:border-gray-700 rounded-md px-2 transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'settings' ? 'animate-double-blink' : ''}`}
+          >
+            <Settings className="size-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              handleButtonClick('logout')
+              handleLogout()
+            }}
+            className={`hidden sm:flex border border-gray-200 dark:border-gray-700 rounded-md px-2 transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'logout' ? 'animate-double-blink' : ''}`}
+          >
+            Logout
+          </Button>
         </div>
 
         <UserPreferencesModal
@@ -378,19 +474,21 @@ export function SiteHeader() {
         />
 
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="right" className="glass border-l-white/20 shadow-[-20px_0_50px_rgba(0,0,0,0.2)]">
-            <SheetHeader className="pb-6">
-              <SheetTitle className="text-2xl font-bold">Upload Resume</SheetTitle>
-              <SheetDescription className="text-muted-foreground/80">Our Dual-Vector algorithm will instantly map your profile to current opportunities.</SheetDescription>
+          <SheetContent side="right" className="data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right data-[state=open]:duration-500">
+            <SheetHeader>
+              <SheetTitle>Upload Resume</SheetTitle>
+              <SheetDescription>Upload your resume to start matching with jobs. Supports PDF and DOCX formats.</SheetDescription>
             </SheetHeader>
 
-            <div className="p-4 bg-white/5 rounded-3xl border border-white/10">
+            <div className="p-4">
               <FileUpload onUploadComplete={handleUploadSuccess} />
             </div>
 
-            <SheetFooter className="mt-8 pt-8 border-t border-white/10">
-              <div className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Privacy Shield Enabled</div>
+            <SheetFooter>
+              <div className="text-xs text-muted-foreground">Resume will be uploaded and processed by our AI.</div>
             </SheetFooter>
+
+            <SheetClose />
           </SheetContent>
         </Sheet>
       </div>

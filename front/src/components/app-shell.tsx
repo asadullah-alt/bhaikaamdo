@@ -24,7 +24,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (shouldHideShell) {
-    return <div className="min-h-screen mesh-gradient">{children}</div>
+    return <div className="min-h-screen">{children}</div>
   }
 
   return (
@@ -37,7 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       }
     >
       {/* <AppSidebar variant="inset" /> */}
-      <SidebarInset className="mesh-gradient">
+      <SidebarInset>
         <SiteHeader />
         <Toaster />
         <div className="flex flex-1 flex-col">
