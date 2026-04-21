@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Menu, X, Target, Sparkles, TrendingUp, BarChart3, CheckCircle2, Clock, Zap, Moon, Sun, Globe } from 'lucide-react'
+import { ArrowRight, Menu, X, Target, Sparkles, TrendingUp, BarChart3, CheckCircle2, Clock, Zap, Moon, Sun, Globe, Search } from 'lucide-react'
 import { Button } from '@/components/ui/buttonHome'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import Image from 'next/image'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { Variants } from 'framer-motion'
 import { useTheme } from '@/context/theme-context'
 import PageAssemblyAnimationWithProps from '@/components/analysis-matcher/page-assembly-with-props'
+
 const transitionVariants: {
     container?: Variants;
     item: Variants;
@@ -31,12 +32,14 @@ const transitionVariants: {
         },
     },
 }
+
 const jobDetails = {
     jobTitle: "Data Scientist",
     company: "AI Corp",
     location: "Boston, MA",
     matchScore: 82
 }
+
 const platforms = [
     { name: 'LinkedIn', icon: '/linkedin.svg' },
     { name: 'Indeed', icon: '/indeed.svg' },
@@ -62,7 +65,6 @@ export function HeroSection() {
                 </div>
                 <section>
                     <div className="relative pt-24 md:pt-36">
-
                         <div aria-hidden className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]" />
                         <div className="mx-auto max-w-7xl px-6">
                             <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
@@ -84,12 +86,7 @@ export function HeroSection() {
                                             </div>
                                         </div>
                                     </Link>
-
-
-
                                 </AnimatedGroup>
-
-
 
                                 {/* Trust badges */}
                                 <AnimatedGroup
@@ -130,19 +127,6 @@ export function HeroSection() {
                             <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4">
                                 Everything you need to land your dream job
                             </h2>
-                            {/* <div className="mt-8 mb-12 max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-border/50 aspect-video relative group">
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    src="https://www.youtube.com/embed/H7viGpV0XEo?autoplay=1&mute=1&controls=0&loop=1&playlist=H7viGpV0XEo&modestbranding=1&rel=0"
-                                    title="Bhai Kaam Do Product Demo"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full"
-                                ></iframe>
-                                <div className="absolute inset-0 bg-transparent pointer-events-none group-hover:bg-black/5 transition-colors duration-300" />
-                            </div> */}
                             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                                 Powerful AI-driven tools that work together to streamline your entire job search journey
                             </p>
@@ -294,15 +278,10 @@ export function HeroSection() {
 
 const features = [
     {
-        icon: Target,
-        title: 'AI Resume Builder',
-        description: 'Create tailored resumes that match job descriptions perfectly. Our AI analyzes keywords and optimizes your content for ATS systems.'
+        icon: Search,
+        title: 'Dual-Vector Matching',
+        description: 'To find the jobs we use Dual-Vector and find the best matches out there from hundreds of career pages and alot of job portals.'
     },
-    // {
-    //     icon: FileText,
-    //     title: 'Job Application Tracker',
-    //     description: 'Track every application in one place. Save jobs from 40+ job boards, monitor status, and never lose track of opportunities.'
-    // },
     {
         icon: Sparkles,
         title: 'AI Cover Letter Generator',
@@ -317,12 +296,7 @@ const features = [
         icon: BarChart3,
         title: 'Keyword Analyzer',
         description: 'Extract essential keywords from job descriptions and optimize your resume to get noticed by recruiters.'
-    },
-    // {
-    //     icon: Zap,
-    //     title: 'Autofill Applications',
-    //     description: 'Automate your application process with AI-powered autofill for job application questions and forms.'
-    // }
+    }
 ]
 
 const steps = [
@@ -339,8 +313,6 @@ const steps = [
         description: 'Generate tailored resumes and cover letters for each role. Track applications and follow up automatically.'
     }
 ]
-
-
 
 const menuItems = [
     { name: 'Features', href: '/features' },
@@ -360,6 +332,7 @@ export const HeroHeader = () => {
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
     return (
         <header>
             <nav
@@ -417,7 +390,7 @@ export const HeroHeader = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={toggle}
-                                    className={cn("border border-gray-200 dark:border-gray-700 rounded-md px-2 flex items-center", isScrolled && 'lg:hidden')}>
+                                    className={cn("border border-gray-200 dark:border-gray-700 rounded-md px-2 flex items-center")}>
                                     {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
                                     <span className="ml-2">Theme</span>
                                 </Button>
@@ -465,5 +438,4 @@ const Logo = ({ className }: { className?: string }) => {
             className={className}
         />
     )
-
 }

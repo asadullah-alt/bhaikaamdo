@@ -8,7 +8,7 @@ import FileUpload from "@/components/file-upload"
 import { usePathname, useRouter } from "next/navigation"
 import { resumesApi } from "@/lib/api"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from "@/components/ui/sheet"
-import { UploadCloud, Mail, ChevronDown, BookOpenCheck, Download, Briefcase, Settings, Menu, LogOut } from "lucide-react"
+import { UploadCloud, Mail, ChevronDown, BookOpenCheck, Download, Briefcase, Settings, Menu, LogOut, Search } from "lucide-react"
 import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/context/theme-context'
 import { userApi } from "@/lib/api"
@@ -310,8 +310,8 @@ export function SiteHeader() {
             }}
             className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'resumebuilder' ? 'animate-double-blink' : ''}`}
           >
-            <BookOpenCheck className="size-4 mr-2" />
-            <span className="hidden md:inline">Resume Builder</span>
+            <Search className="size-4 mr-2" />
+            <span className="hidden md:inline">Dual-Vector Matching</span>
           </Button>
           <Button
             variant="ghost"
@@ -352,7 +352,7 @@ export function SiteHeader() {
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={() => { handleButtonClick('resumebuilder'); router.push('/dashboard/resumes') }}>
-                <BookOpenCheck className="size-4 mr-2" />Resume Builder
+                <Search className="size-4 mr-2" />Dual-Vector Matching
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={() => { handleButtonClick('extension'); window.open('https://chromewebstore.google.com/detail/bhaikaamdo-streamline-you/cfhjopkjaegoadmcfmepdbnmkikkpjjk', '_blank') }}>
