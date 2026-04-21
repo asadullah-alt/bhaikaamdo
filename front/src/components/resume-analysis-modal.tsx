@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState } from "react"
-import { FileText, ChevronDown, ChevronUp, Sparkles } from "lucide-react"
+import dynamic from "next/dynamic"
+import { FileText, ChevronDown, ChevronUp, Sparkles, AlertCircle } from "lucide-react"
 import { IconChartBar } from "@tabler/icons-react"
 import {
     Dialog,
@@ -13,7 +14,9 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badgeTable"
 import { Button } from "@/components/ui/button"
-import { ScoreDial } from "@/components/ui/score-dial"
+import { MarkdownResumeViewer } from "@/components/markdown-resume-viewer"
+
+const GaugeComponent = dynamic(() => import("react-gauge-component"), { ssr: false })
 
 interface AnalysisResult {
     original_score: number
@@ -35,6 +38,7 @@ interface ResumeAnalysisModalProps {
     onClose: () => void
     analyzing: boolean
     analysisResult: AnalysisResult | null
+    analysisError?: string | null
     onAnalyzeAgain: () => void
     jobTitle?: string
 }
@@ -44,6 +48,7 @@ export function ResumeAnalysisModal({
     onClose,
     analyzing,
     analysisResult,
+    analysisError,
     onAnalyzeAgain,
     jobTitle,
 }: ResumeAnalysisModalProps) {
@@ -54,6 +59,7 @@ export function ResumeAnalysisModal({
     const missingSkills = analysisResult?.skill_comparison.filter(s => s.resume_mentions === 0) ?? []
     const improvements = analysisResult?.improvements ?? []
     const visibleImprovements = showAllImprovements ? improvements : improvements.slice(0, 4)
+    const hasEnhancedResume = !!analysisResult?.updated_resume_markdown
 
     const handleCopyResume = async () => {
         if (!analysisResult?.updated_resume_markdown) return
@@ -62,10 +68,14 @@ export function ResumeAnalysisModal({
         setTimeout(() => setCopied(false), 2000)
     }
 
-    const hasEnhancedResume = !!analysisResult?.updated_resume_markdown
+    // Don't allow closing while a request is in-flight
+    const handleOpenChange = (open: boolean) => {
+        if (!open && analyzing) return
+        if (!open) onClose()
+    }
 
     return (
-        <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col p-0">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-xl">
@@ -74,23 +84,37 @@ export function ResumeAnalysisModal({
                     </DialogTitle>
                     {jobTitle && (
                         <DialogDescription className="text-sm text-muted-foreground mt-1">
-                            Analyzing your resume against <span className="font-medium text-foreground">{jobTitle}</span>
+                            Against <span className="font-medium text-foreground">{jobTitle}</span>
                         </DialogDescription>
                     )}
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto">
+                    {/* ── Loading ─────────────────────────────────── */}
                     {analyzing ? (
                         <div className="flex flex-col items-center justify-center py-16 gap-4">
                             <div className="animate-spin rounded-full h-14 w-14 border-[3px] border-primary border-t-transparent" />
                             <p className="text-sm text-muted-foreground text-center max-w-xs">
-                                Analyzing your resume against this job posting. This may take a moment...
+                                Analyzing your resume against this job posting. This may take a moment…
                             </p>
                         </div>
+
+                    ) : analysisError ? (
+                        /* ── Error / server still processing ──────── */
+                        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-8">
+                            <AlertCircle size={36} className="text-amber-500" />
+                            <p className="text-sm font-medium">{analysisError}</p>
+                            <Button onClick={onAnalyzeAgain}>
+                                <IconChartBar className="mr-2 h-4 w-4" />
+                                Try Again
+                            </Button>
+                        </div>
+
                     ) : analysisResult ? (
+                        /* ── Results ────────────────────────────────── */
                         <Tabs defaultValue="analysis" className="flex flex-col h-full">
                             <div className="px-6 pt-4">
-                                <TabsList className={`w-full ${!hasEnhancedResume ? "pointer-events-none" : ""}`}>
+                                <TabsList className="w-full">
                                     <TabsTrigger value="analysis" className="flex-1">
                                         Analysis Results
                                     </TabsTrigger>
@@ -108,19 +132,32 @@ export function ResumeAnalysisModal({
                                 </TabsList>
                             </div>
 
+                            {/* Analysis tab */}
                             <TabsContent value="analysis" className="px-6 pb-6 mt-0">
-                                {/* Score Gauge */}
-                                <div className="flex justify-center py-4">
-                                    <ScoreDial
+                                <div className="flex flex-col items-center py-4">
+                                    <GaugeComponent
+                                        type="semicircle"
+                                        arc={{
+                                            colorArray: ["#FF2121", "#FFA500", "#00FF15"],
+                                            padding: 0.02,
+                                            width: 0.2,
+                                            subArcs: [
+                                                { limit: 40 },
+                                                { limit: 60 },
+                                                { limit: 100 },
+                                            ],
+                                        }}
+                                        pointer={{ type: "blob", animationDelay: 0 }}
                                         value={Math.round(analysisResult.original_score * 100)}
-                                        size={240}
-                                        label="Resume Score"
                                     />
+                                    <p className="text-sm font-medium -mt-2">Resume Match Score</p>
+                                    <p className="text-3xl font-black text-primary mt-1">
+                                        {Math.round(analysisResult.original_score * 100)}%
+                                    </p>
                                 </div>
 
-                                {/* Skills Grid */}
+                                {/* Skills grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                                    {/* Matched Skills */}
                                     <div className="bg-green-50 dark:bg-green-950/20 rounded-xl p-4 border border-green-200 dark:border-green-900">
                                         <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-3 flex items-center gap-1.5">
                                             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
@@ -130,11 +167,8 @@ export function ResumeAnalysisModal({
                                         {matchedSkills.length > 0 ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {matchedSkills.map((skill, i) => (
-                                                    <Badge
-                                                        key={i}
-                                                        variant="secondary"
-                                                        className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800 text-xs"
-                                                    >
+                                                    <Badge key={i} variant="secondary"
+                                                        className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800 text-xs">
                                                         {skill.skill}
                                                         <span className="ml-1 opacity-60">{skill.resume_mentions}✓</span>
                                                     </Badge>
@@ -145,7 +179,6 @@ export function ResumeAnalysisModal({
                                         )}
                                     </div>
 
-                                    {/* Missing Skills */}
                                     <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 border border-red-200 dark:border-red-900">
                                         <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-3 flex items-center gap-1.5">
                                             <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
@@ -155,11 +188,8 @@ export function ResumeAnalysisModal({
                                         {missingSkills.length > 0 ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {missingSkills.map((skill, i) => (
-                                                    <Badge
-                                                        key={i}
-                                                        variant="outline"
-                                                        className="border-red-300 text-red-600 dark:border-red-800 dark:text-red-400 text-xs"
-                                                    >
+                                                    <Badge key={i} variant="outline"
+                                                        className="border-red-300 text-red-600 dark:border-red-800 dark:text-red-400 text-xs">
                                                         {skill.skill}
                                                     </Badge>
                                                 ))}
@@ -189,30 +219,25 @@ export function ResumeAnalysisModal({
                                                 onClick={() => setShowAllImprovements(v => !v)}
                                                 className="mt-3 text-xs text-primary flex items-center gap-1 hover:underline"
                                             >
-                                                {showAllImprovements ? (
-                                                    <><ChevronUp size={12} /> Show less</>
-                                                ) : (
-                                                    <><ChevronDown size={12} /> Show {improvements.length - 4} more</>
-                                                )}
+                                                {showAllImprovements
+                                                    ? <><ChevronUp size={12} /> Show less</>
+                                                    : <><ChevronDown size={12} /> Show {improvements.length - 4} more</>
+                                                }
                                             </button>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Analyze Again button */}
-                                <Button
-                                    className="w-full mt-5"
-                                    variant="outline"
-                                    onClick={onAnalyzeAgain}
-                                >
+                                <Button className="w-full mt-5" variant="outline" onClick={onAnalyzeAgain}>
                                     <IconChartBar className="mr-2 h-4 w-4" />
                                     Analyze Again
                                 </Button>
                             </TabsContent>
 
+                            {/* Enhanced Resume tab */}
                             <TabsContent value="enhanced" className="px-6 pb-6 mt-0">
                                 {hasEnhancedResume ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <p className="text-sm font-semibold flex items-center gap-2">
@@ -228,10 +253,12 @@ export function ResumeAnalysisModal({
                                                 {copied ? "Copied!" : "Copy"}
                                             </Button>
                                         </div>
-                                        <div className="rounded-xl border bg-muted/10 p-4 max-h-[400px] overflow-y-auto">
-                                            <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed">
-                                                {analysisResult.updated_resume_markdown}
-                                            </pre>
+
+                                        {/* Rendered with Classic CV template styling */}
+                                        <div className="rounded-xl border overflow-y-auto max-h-[440px] bg-white shadow-inner">
+                                            <div className="p-6">
+                                                <MarkdownResumeViewer markdown={analysisResult.updated_resume_markdown!} />
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -245,7 +272,9 @@ export function ResumeAnalysisModal({
                                 )}
                             </TabsContent>
                         </Tabs>
+
                     ) : (
+                        /* ── Empty / not yet run ────────────────────── */
                         <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
                             <IconChartBar size={40} className="text-muted-foreground/30" />
                             <p className="text-sm text-muted-foreground max-w-xs">

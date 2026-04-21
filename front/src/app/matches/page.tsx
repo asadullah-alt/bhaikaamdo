@@ -65,6 +65,7 @@ export default function MatchesPage() {
         updated_resume_markdown?: string;
     } | null>(null)
     const [resumeId, setResumeId] = useState<string | null>(null)
+    const [analysisError, setAnalysisError] = useState<string | null>(null)
     const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false)
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false)
 
@@ -261,6 +262,7 @@ export default function MatchesPage() {
     // Reset analysis when selected match changes
     useEffect(() => {
         setAnalysisResult(null)
+        setAnalysisError(null)
         setAnalyzing(false)
     }, [selectedId])
 
@@ -273,6 +275,7 @@ export default function MatchesPage() {
 
         try {
             setAnalyzing(true)
+            setAnalysisError(null)
             setIsAnalysisModalOpen(true)
 
             const payload: Record<string, unknown> = {
@@ -295,9 +298,16 @@ export default function MatchesPage() {
 
             const analysisData = await analysisResponse.json()
             console.log('Analysis Result:', analysisData.data)
-            setAnalysisResult(analysisData.data)
+
+            if (analysisData.data) {
+                setAnalysisResult(analysisData.data)
+            } else {
+                // Server may still be processing — surface a friendly retry prompt
+                setAnalysisError("The server is still preparing your analysis. Please try again in a moment.")
+            }
         } catch (error) {
             console.error('Error analyzing resume:', error)
+            setAnalysisError("Something went wrong. Please try again.")
         } finally {
             setAnalyzing(false)
         }
@@ -669,6 +679,7 @@ export default function MatchesPage() {
                                     onClose={() => setIsAnalysisModalOpen(false)}
                                     analyzing={analyzing}
                                     analysisResult={analysisResult}
+                                    analysisError={analysisError}
                                     onAnalyzeAgain={analyzeResume}
                                     jobTitle={selectedMatch.job_details.jobTitle ?? undefined}
                                 />
