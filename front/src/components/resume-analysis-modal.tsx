@@ -220,7 +220,7 @@ export function ResumeAnalysisModal({
                                                     AI-Enhanced Resume
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Tailored to match this job's requirements
+                                                    Tailored to match this job&apos;s requirements
                                                 </p>
                                             </div>
                                             <Button size="sm" variant="outline" onClick={handleCopyResume}>
