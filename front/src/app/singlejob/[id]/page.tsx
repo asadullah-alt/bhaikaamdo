@@ -9,8 +9,13 @@ import { Badge } from '@/components/ui/badgeTable'
 import { useJobStore } from '@/store/job-store'
 import { getCfAuthCookie } from '@/utils/cookie'
 import dynamic from "next/dynamic";
-import { Link, Share2, FileText } from "lucide-react";
+import { Link, Share2, FileText, Download } from "lucide-react";
 import { CoverLetterModal } from '@/components/cover-letter-modal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MarkdownResumeViewer } from '@/components/markdown-resume-viewer';
+import { generateResumePDF } from '@/lib/resume-pdf';
+import { useResumeStore } from '@/store/resume-store';
+import { toast } from 'sonner';
 
 import { ExtendedJob } from '@/store/job-store'
 
@@ -43,6 +48,7 @@ export default function SingleJobPage({ params: paramsPromise }: { params: Promi
   const [copied, setCopied] = React.useState(false)
   const [resumeId, setResumeId] = React.useState<string | null>(null)
   const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = React.useState(false)
+  const [isImproveResumeModalOpen, setIsImproveResumeModalOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (copied) {
@@ -630,17 +636,17 @@ export default function SingleJobPage({ params: paramsPromise }: { params: Promi
                 </>
               )}
             </Button>
-
-            {/* <Button
-              className="w-full mt-4"
-              variant="secondary"
-              size="lg"
-              onClick={() => setIsImproveResumeModalOpen(true)}
-              disabled={!analysisResult?.updated_resume_markdown}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Improve Resume
-            </Button> */}
+            {analysisResult?.updated_resume_markdown && (
+              <Button
+                className="w-full mt-4"
+                variant="outline"
+                size="lg"
+                onClick={() => setIsImproveResumeModalOpen(true)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Show Improved Resume
+              </Button>
+            )}
 
             <Button
               className="w-full mt-4"
@@ -651,6 +657,48 @@ export default function SingleJobPage({ params: paramsPromise }: { params: Promi
               <FileText className="mr-2 h-4 w-4" />
               Generate Cover Letter
             </Button>
+            {/* Improved Resume Modal */}
+            <Dialog open={isImproveResumeModalOpen} onOpenChange={setIsImproveResumeModalOpen}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+                  <DialogTitle className="flex items-center gap-2 text-xl">
+                    <FileText className="text-primary" size={22} />
+                    Improved Resume
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="p-6">
+                  {/* Render improved resume markdown */}
+                  <MarkdownResumeViewer markdown={analysisResult?.updated_resume_markdown ?? ''} />
+                </div>
+                <div className="flex justify-end px-6 py-4 border-t bg-muted/50">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      // Generate PDF from the existing resume data (structured) as a fallback
+                      try {
+                        const resume = useResumeStore.getState().resume;
+                        if (!resume) return;
+                        const blob = await generateResumePDF(resume);
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${resume.personal_data.first_name || 'resume'}_${resume.personal_data.last_name || ''}_Improved.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast.success('Improved PDF downloaded');
+                      } catch (e) {
+                        toast.error('Failed to generate PDF');
+                      }
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <CoverLetterModal
               isOpen={isCoverLetterModalOpen}

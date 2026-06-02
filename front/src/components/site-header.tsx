@@ -311,7 +311,7 @@ export function SiteHeader() {
             className={`border border-gray-200 dark:border-gray-700 rounded-md px-2 cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:border-primary dark:hover:border-primary ${blinkingButton === 'resumebuilder' ? 'animate-double-blink' : ''}`}
           >
             <Search className="size-4 mr-2" />
-            <span className="hidden md:inline">Dual-Vector Matching</span>
+            <span className="hidden md:inline">Your Resumes</span>
           </Button>
           <Button
             variant="ghost"
