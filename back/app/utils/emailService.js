@@ -1,11 +1,6 @@
 const nodemailer = require('nodemailer');
-// please please please dont add this in the codebase again
-// this should be in environment variables
-
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
-  // finally in a bloody environment variable
-  // thank god
   host: process.env.EMAIL_HOST,
   port: 2525,
   secure: false, // true for 465, false for other ports
@@ -17,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 // Generate a random 6-digit verification code
 const generateVerificationCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(100000 + Math.random() * 900000).toString(); //i think we should use a better random number generator than Math.random
 };
 
 // Send verification email
@@ -96,7 +91,7 @@ const sendSignupNotificationToAdmin = async (user) => {
 
     const mailOptions = {
       from: `"Bhai Kaam Do System" <${process.env.EMAIL_USER}>`,
-      to: "asadullahbeg@gmail.com",
+      to: "asadullahbeg@gmail.com", // TODO: put this shit in a env var. i don't have ssh (to add in .env) so whoever has it, pls fix
       subject: "New User Signup Notification - Bhai Kaam Do",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
