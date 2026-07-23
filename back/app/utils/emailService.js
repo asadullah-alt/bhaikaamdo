@@ -108,7 +108,7 @@ const sendSignupNotificationToAdmin = async (user) => {
             <p><strong>Signup Method:</strong> ${signupMethod}</p>
             <p><strong>Signup Date:</strong> ${new Date().toLocaleString()}</p>
           </div>
-          <p style="color: #666; font-size: 12px;">This is an automated notification from the CareerForge backend.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated notification from the Bhai Kaam Do backend.</p>
         </div>
       `
     };
