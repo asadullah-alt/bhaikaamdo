@@ -431,14 +431,13 @@ export default function MatchesPage() {
                         ) : filteredMatches.length === 0 ? (
                             selectedResumeId ? (
                                 <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-5">
-                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                                         <IconBriefcase size={32} className="text-primary" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <p className="text-base font-semibold text-foreground">Matching in progress</p>
+                                        <p className="text-base font-semibold text-foreground">No matches found</p>
                                         <p className="text-sm text-muted-foreground max-w-[240px]">
-                                            We&apos;re processing your resume against {weightedCount} jobs.
-                                            Please hold on for 10 seconds. This page will display the closest matching jobs...
+                                            We are sorry no new jobs are available for you but we will keep you posted.
                                         </p>
                                     </div>
                                 </div>
@@ -719,44 +718,61 @@ export default function MatchesPage() {
                                 `}</style>
 
                                 {selectedResumeId ? (
-                                    <>
-                                        <div className="relative w-44 h-44 flex items-center justify-center">
-                                            <span className="absolute inset-0 rounded-full border border-primary/30"
-                                                style={{ animation: 'cf-ping-slow 2.4s ease-out infinite' }} />
-                                            <span className="absolute inset-0 rounded-full border border-primary/20"
-                                                style={{ animation: 'cf-ping-slow 2.4s ease-out 1.2s infinite' }} />
+                                    loading ? (
+                                        <>
+                                            <div className="relative w-44 h-44 flex items-center justify-center">
+                                                <span className="absolute inset-0 rounded-full border border-primary/30"
+                                                    style={{ animation: 'cf-ping-slow 2.4s ease-out infinite' }} />
+                                                <span className="absolute inset-0 rounded-full border border-primary/20"
+                                                    style={{ animation: 'cf-ping-slow 2.4s ease-out 1.2s infinite' }} />
 
-                                            <div className="z-10 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shadow-lg"
-                                                style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
-                                                <IconBriefcase size={38} className="text-primary" />
-                                            </div>
+                                                <div className="z-10 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shadow-lg"
+                                                    style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
+                                                    <IconBriefcase size={38} className="text-primary" />
+                                                </div>
 
-                                            {[
-                                                { anim: 'cf-orbit  3.6s linear infinite', color: 'bg-primary', size: 'w-3   h-3' },
-                                                { anim: 'cf-orbit2 3.6s linear infinite', color: 'bg-primary/60', size: 'w-2.5 h-2.5' },
-                                                { anim: 'cf-orbit3 3.6s linear infinite', color: 'bg-primary/80', size: 'w-2   h-2' },
-                                            ].map((o, i) => (
-                                                <span key={i}
-                                                    className={`absolute rounded-full ${o.color} ${o.size} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
-                                                    style={{ animation: o.anim }} />
-                                            ))}
-                                        </div>
-
-                                        <div className="text-center space-y-3 max-w-sm">
-                                            <p className="text-xl font-bold text-foreground">Matching in progress</p>
-                                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                                We&apos;re processing your resume against {weightedCount} jobs.
-                                                Please hold on for 10 seconds. This page will display the closest matching jobs...
-                                            </p>
-                                            <div className="flex items-center justify-center gap-1.5 pt-1">
-                                                {[0, 0.4, 0.8].map((delay, i) => (
+                                                {[
+                                                    { anim: 'cf-orbit  3.6s linear infinite', color: 'bg-primary', size: 'w-3   h-3' },
+                                                    { anim: 'cf-orbit2 3.6s linear infinite', color: 'bg-primary/60', size: 'w-2.5 h-2.5' },
+                                                    { anim: 'cf-orbit3 3.6s linear infinite', color: 'bg-primary/80', size: 'w-2   h-2' },
+                                                ].map((o, i) => (
                                                     <span key={i}
-                                                        className="w-2 h-2 rounded-full bg-primary/50"
-                                                        style={{ animation: `cf-dot 1.2s ease-in-out ${delay}s infinite` }} />
+                                                        className={`absolute rounded-full ${o.color} ${o.size} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+                                                        style={{ animation: o.anim }} />
                                                 ))}
                                             </div>
-                                        </div>
-                                    </>
+
+                                            <div className="text-center space-y-3 max-w-sm">
+                                                <p className="text-xl font-bold text-foreground">Matching in progress</p>
+                                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                                    We&apos;re processing your resume against {weightedCount} jobs.
+                                                    Please hold on for 10 seconds. This page will display the closest matching jobs...
+                                                </p>
+                                                <div className="flex items-center justify-center gap-1.5 pt-1">
+                                                    {[0, 0.4, 0.8].map((delay, i) => (
+                                                        <span key={i}
+                                                            className="w-2 h-2 rounded-full bg-primary/50"
+                                                            style={{ animation: `cf-dot 1.2s ease-in-out ${delay}s infinite` }} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="relative w-44 h-44 flex items-center justify-center">
+                                                <div className="z-10 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shadow-lg"
+                                                    style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
+                                                    <IconBriefcase size={38} className="text-primary" />
+                                                </div>
+                                            </div>
+                                            <div className="text-center space-y-3 max-w-sm">
+                                                <p className="text-xl font-bold text-foreground">No matches found</p>
+                                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                                    We are sorry no new jobs are available for you but we will keep you posted.
+                                                </p>
+                                            </div>
+                                        </>
+                                    )
                                 ) : (
                                     <>
                                         <div style={{ animation: 'cf-float 3s ease-in-out infinite' }}>
